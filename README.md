@@ -105,7 +105,12 @@ Milestones
 * Creating base polygon engine. (DONE)
 * Creating wrapper for OpenCL renderer. (DONE)
 * Rendering a single voxel. (DONE)
+* Rendering voxel brick. (DONE)
 * Rendering simple octree. (In progress)
 * Rendering complex octree.
 * Creating GPU cache system.
 * Rendering multiple octrees.
+
+Screenshots
+===========
+![First voxel brick](screenshots/voxelBrick.png)
