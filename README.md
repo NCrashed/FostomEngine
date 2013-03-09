@@ -99,3 +99,13 @@ $ rdmd compile.d all release
 ```
 There is some big problem. I don't know how cl4d author have got OpenCL.lib and i can't get OpenCL.a for Linux.
 I am going to rewrite cl4d to use dynamic bindings as Derelict does.
+
+Milestones
+===========
+* Creating base polygon engine. (DONE)
+* Creating wrapper for OpenCL renderer. (DONE)
+* Rendering a single voxel. (DONE)
+* Rendering simple octree. (In progress)
+* Rendering complex octree.
+* Creating GPU cache system.
+* Rendering multiple octrees.
