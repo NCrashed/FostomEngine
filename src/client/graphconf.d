@@ -28,11 +28,4 @@ struct GraphConf
 	int depthBits = 32;
 	/// Вертикальная синхронизация
 	bool vertSync = true;
-
-	/// Конвертация инфы о оконном/полноэкранном режиме
-	int getWindowMode()
-	{
-		if (windowed) return GLFW_WINDOWED;
-		return GLFW_FULLSCREEN;
-	}
 }

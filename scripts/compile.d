@@ -37,7 +37,6 @@ static this()
 	derelictLibs =
 	[
 		"DerelictGL3",
-		"DerelictGLU",
 		"DerelictGLFW3",
 		"DerelictUtil",
 		"DerelictFI",
@@ -74,7 +73,7 @@ void compileGLFW3(string libPath)
 	version(linux)
 	{
 		checkProgram("cmake", "Cannot find CMake to build GLFW3! You can get it from http://www.cmake.org/cmake/resources/software.html");
-		system("cd "~libPath~` && cmake ./`);
+		system("cd "~libPath~` && cmake -D BUILD_SHARED_LIBS=ON ./`);
 		system("cd "~libPath~` && make`);
 		system("cp "~libPath~`/src/libglfw.so `~getCurrentTarget().outDir~`/libglfw.so`);
 	}
@@ -82,9 +81,9 @@ void compileGLFW3(string libPath)
 	{
 		checkProgram("cmake", "Cannot find CMake to build GLFW3! You can get it from http://www.cmake.org/cmake/resources/software.html");
 		checkProgram("make", "Cannot find MinGW to build GLFW3! You can build manualy with GLFW3 and copy glfw.dll to output folder or get MinGW from http://www.mingw.org/wiki/Getting_Started");
-		system("cd "~libPath~` & cmake -G "MinGW Makefiles" .\`);
+		system("cd "~libPath~` & cmake -D BUILD_SHARED_LIBS=ON -G "MinGW Makefiles" .\`);
 		system("cd "~libPath~` & make`);
-		system("copy "~libPath~`\src\glfw.dll `~getCurrentTarget().outDir~`\glfw.dll`);
+		system("copy "~libPath~`\src\glfw3.dll `~getCurrentTarget().outDir~`\glfw3.dll`);
 	}
 }
 
@@ -115,7 +114,7 @@ int main(string[] args)
 
 	addLibraryFiles("cl4d", ".", ["OpenCL","cl4d"], ["."], &compileCl4d);
 
-	checkSharedLibraries("GLFW3", ["glfw"], &compileGLFW3);
+	checkSharedLibraries("GLFW3", ["glfw3"], &compileGLFW3);
 	checkSharedLibraries("FreeImage", ["freeimage"], &compileFreeImage);
 
 	addSource("../src/client");

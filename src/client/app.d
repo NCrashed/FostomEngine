@@ -73,7 +73,7 @@ class App
 		    //rendersys.drawScenePoly(mCamera);
 
 			// Swap buffers
-			glfwSwapBuffers();
+			glfwSwapBuffers(rendersys.windowPtr);
 			glfwPollEvents();
 
 			update(rendersys.timing);
@@ -182,11 +182,11 @@ private:
 		import std.stream;
 		/// Заливка фона
 		
-		glfwSetWindowSizeCallback( &reshape );  
-		glfwSetMousePosCallback( &mouseUpdate );
-		glfwSetKeyCallback(&charUpdate);
+		glfwSetWindowSizeCallback(rendersys.windowPtr, &reshape );  
+		glfwSetCursorPosCallback(rendersys.windowPtr, &mouseUpdate );
+		glfwSetKeyCallback(rendersys.windowPtr, &charUpdate);
 
-		glfwSetInputMode(rendersys.window, GLFW_CURSOR_MODE, GLFW_CURSOR_CAPTURED);
+		glfwSetInputMode(rendersys.windowPtr, GLFW_CURSOR_MODE, GLFW_CURSOR_CAPTURED);
 
 		// Создание камеры
 		mCamera = new Camera;  
@@ -212,9 +212,7 @@ private:
 	/// Обновление всех систем
 	void update(double dt)
 	{
-		auto window = rendersys.window;
-
-		mCurrWorld.update(window, dt);
+		mCurrWorld.update(rendersys.windowPtr, dt);
 
 		// Апдейт камеры
 		mCamera.update(dt);
@@ -249,7 +247,7 @@ private:
 	/**
 	*	Вызывается сама через GLFW3
 	*/
-	extern(C) static void mouseUpdate(GLFWwindow window, int xpos, int ypos)
+	extern(C) static void mouseUpdate(GLFWwindow* window, int xpos, int ypos)
 	{
 		mainThread.send("mpos",xpos,ypos);
 	}
@@ -258,7 +256,7 @@ private:
 	/**
 	*	Вызывается сама через GLFW3
 	*/
-	extern(C) static void reshape( GLFWwindow window, int w, int h )
+	extern(C) static void reshape(GLFWwindow* window, int w, int h )
 	{
 		mainThread.send("resize",w,h);
 	}
@@ -267,7 +265,7 @@ private:
 	/**
 	*	Вызывается сама через GLFW3
 	*/
-	extern(C) static void charUpdate(GLFWwindow window,  int key, int action)
+	extern(C) static void charUpdate(GLFWwindow* window,  int key, int action)
 	{
 		if(action == GLFW_PRESS)
 		{

@@ -91,7 +91,7 @@ class DerelictFILoader : SharedLibLoader
             myBindFunc(FreeImage_SetOutputMessage, "FreeImage_SetOutputMessage");
 
             // This one isn't mangled like the rest, likely because of the variable args.
-            bindFunc(cast(void**)&FreeImage_OutputMessageProc, "FreeImage_OutputMessageProc");
+            //bindFunc(cast(void**)&FreeImage_OutputMessageProc, "FreeImage_OutputMessageProc");
 
             myBindFunc(FreeImage_Allocate, "FreeImage_Allocate");
             myBindFunc(FreeImage_AllocateT, "FreeImage_AllocateT");
@@ -138,8 +138,8 @@ class DerelictFILoader : SharedLibLoader
             myBindFunc(FreeImage_FIFSupportsExportType, "FreeImage_FIFSupportsExportType");
             myBindFunc(FreeImage_FIFSupportsICCProfiles, "FreeImage_FIFSupportsICCProfiles");
             myBindFunc(FreeImage_FIFSupportsNoPixels, "FreeImage_FIFSupportsNoPixels");
-            myBindFunc(FreeImage_OpenMultiBitmap, "FreeImage_OpenMultiBitmap");
-            myBindFunc(FreeImage_OpenMultiBitmapFromHandle, "FreeImage_OpenMultiBitmapFromHandle");
+            //myBindFunc(FreeImage_OpenMultiBitmap, "FreeImage_OpenMultiBitmap");
+            //myBindFunc(FreeImage_OpenMultiBitmapFromHandle, "FreeImage_OpenMultiBitmapFromHandle");
             myBindFunc(FreeImage_SaveMultiBitmapToHandle, "FreeImage_SaveMultiBitmapToHandle");
             myBindFunc(FreeImage_CloseMultiBitmap, "FreeImage_CloseMultiBitmap");
             myBindFunc(FreeImage_GetPageCount, "FreeImage_GetPageCount");

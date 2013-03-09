@@ -46,6 +46,10 @@ enum RENDER_LOG = "RenderLog.log";
 enum SHADERS_GROUP = "General";
 enum STD_SCENE_MANAGER = "client.stdscenemanager.StdSceneManager";
 
+private extern(C) void glfw3ErrorCallback(int error, const(char)* description)
+{
+    writeLog(fromStringz(description), LOG_ERROR_LEVEL.NOTICE, RENDER_LOG);
+}
 
 /// Занимается отрисовкой сцены на экран
 /**
@@ -78,6 +82,7 @@ class RenderSystem
             writeLog("Failed to init GLF3!", LOG_ERROR_LEVEL.FATAL, RENDER_LOG);
             throw new Exception("Failed to init GLFW3!");
         }
+        glfwSetErrorCallback(&glfw3ErrorCallback);
 
         // Вообще я был удивлен, что кастом можно добавить флаг nothrow к функции Оо
         writeLog("Initing FreeImage...", LOG_ERROR_LEVEL.NOTICE, RENDER_LOG);
@@ -340,6 +345,15 @@ class RenderSystem
     /// Получение окна приложения
     @property GLFWwindow window()
     {
+        return *mWindow;
+    }
+
+    /// Returns pointer to window
+    /**
+    *   Simplifies using glfwSwapBuffers and others glfw callback setting.
+    */
+    @property GLFWwindow* windowPtr()
+    {
         return mWindow;
     }
 
@@ -389,7 +403,7 @@ class RenderSystem
     */
     bool shouldContinue()
     {
-        return (glfwIsWindow(mWindow) == 1);
+        return (glfwWindowShouldClose(mWindow) == 0);
     }
 
     /// Получение текущего сцен менджера
@@ -404,7 +418,7 @@ private:
     GraphConf mGraphicConfigs;
 
     /// Окно приложения
-    GLFWwindow mWindow;
+    GLFWwindow* mWindow;
     /// Переменные для замера скорости отрисовки
     double t = 0., t_old = 0., dt = 0.;
 
@@ -623,16 +637,22 @@ private:
             grConf = readConf!GraphConf(GRAPH_CONF);
 
         // Загружаем окно
-        glfwOpenWindowHint(GLFW_DEPTH_BITS, grConf.depthBits);
-        glfwOpenWindowHint(GLFW_FSAA_SAMPLES, 4);
+        //glfwWindowHint(GLFW_DEPTH_BITS, grConf.depthBits); TODO: Fix depthBits crashed
+        glfwWindowHint(GLFW_FSAA_SAMPLES, 4);
 
-        mWindow = glfwOpenWindow( grConf.screenX, grConf.screenY, grConf.getWindowMode(), toStringz(tittle), null );
+        GLFWmonitor* mMonitor = null;
+        if(!grConf.windowed) mMonitor = glfwGetPrimaryMonitor();
+
+        writeln(grConf.screenX, " ", grConf.screenY, " ", toStringz(tittle));
+        mWindow = glfwCreateWindow( grConf.screenX, grConf.screenY, toStringz(tittle), mMonitor, null );
         if ( mWindow is null)
         {
             writeLog("Failed to create window!", LOG_ERROR_LEVEL.FATAL, RENDER_LOG);
+            glfwTerminate();
             throw new Exception("Failed to create window!");
         }
-        
+        glfwMakeContextCurrent(mWindow);
+
         glfwSetInputMode( mWindow, GLFW_STICKY_KEYS, GL_TRUE );
         glfwSetTime( 0.0 );
 

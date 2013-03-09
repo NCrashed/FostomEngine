@@ -239,7 +239,7 @@ private:
 	int mWidth, mHeight;
 }
 
-private extern(C) uint readProc(void *buffer, uint size, uint count, fi_handle handle) nothrow
+private extern(Windows) uint readProc(void *buffer, uint size, uint count, fi_handle handle) nothrow
 {
 	try
 	{
@@ -259,7 +259,7 @@ private extern(C) uint readProc(void *buffer, uint size, uint count, fi_handle h
 	return 0;
 }
 
-private extern(C) uint writeProc(void *buffer, uint size, uint count, fi_handle handle) nothrow
+private extern(Windows) uint writeProc(void *buffer, uint size, uint count, fi_handle handle) nothrow
 {
 	try
 	{
@@ -273,7 +273,7 @@ private extern(C) uint writeProc(void *buffer, uint size, uint count, fi_handle 
 	return 0;
 }
 
-private extern(C) int seekProc(fi_handle handle, long offset, int origin) nothrow
+private extern(Windows) int seekProc(fi_handle handle, int offset, int origin) nothrow
 {
 	try
 	{
@@ -287,12 +287,12 @@ private extern(C) int seekProc(fi_handle handle, long offset, int origin) nothro
 	return 0;
 }
 
-private extern(C) long tellProc(fi_handle handle) nothrow
+private extern(Windows) int tellProc(fi_handle handle) nothrow
 { 
 	try
 	{
 		Stream file = cast(Stream)handle;
-		return file.position();
+		return cast(int)file.position();
 	} 
 	catch(Exception e)
 	{

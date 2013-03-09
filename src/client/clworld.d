@@ -39,7 +39,7 @@ abstract class ClientWorld
 	*	время между предыдущем вызовом этой функции и текущим. Текущее окно передается
 	*	в $(B window).
 	*/
-	void update(GLFWwindow window, double dt);
+	void update(GLFWwindow* window, double dt);
 
 	/**
 	*	При перемещении мышки вызывается эта функция. 

@@ -62,7 +62,7 @@ class MainWorld : ClientWorld
 	*	время между предыдущем вызовом этой функции и текущим. Текущее окно передается
 	*	в $(B window).
 	*/
-	override void update(GLFWwindow window, double dt)
+	override void update(GLFWwindow* window, double dt)
 	{
 		// Вперед-назад
 		if(glfwGetKey( window, GLFW_KEY_W ))
@@ -136,10 +136,10 @@ class MainWorld : ClientWorld
 			mCamMode = !mCamMode;
 			if(!mCamMode)
 			{
-				glfwSetInputMode(rendersys.window, GLFW_CURSOR_MODE, GLFW_CURSOR_NORMAL);
+				glfwSetInputMode(rendersys.windowPtr, GLFW_CURSOR_MODE, GLFW_CURSOR_NORMAL);
 			} else
 			{
-				glfwSetInputMode(rendersys.window, GLFW_CURSOR_MODE, GLFW_CURSOR_CAPTURED);
+				glfwSetInputMode(rendersys.windowPtr, GLFW_CURSOR_MODE, GLFW_CURSOR_CAPTURED);
 			}
 		} else if (key == GLFW_KEY_PAUSE)
 		{
