@@ -1,0 +1,7 @@
+MODULES = 
+	$(MODULE util.dispatching)
+	$(MODULE util.serialization.binary)
+	$(MODULE util.serialization.gendoc)
+	$(MODULE util.serialization.serializer)
+	$(MODULE util.common)
+	$(MODULE util.protocol)

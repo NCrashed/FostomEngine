@@ -1,0 +1,2 @@
+call AmbrisClient.exe
+pause

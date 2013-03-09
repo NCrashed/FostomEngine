@@ -1,0 +1,13 @@
+Struct MaterialInfo Material
+{
+	StructArray PolygonMode polyMods
+	{
+		Struct PolygonMode polyMods_0
+		{
+			string face "GL_FRONT_AND_BACK",
+			string mode "GL_POINT",
+		}
+	}
+
+	string texture "sand_side.tga",
+}
