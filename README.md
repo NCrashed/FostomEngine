@@ -45,7 +45,7 @@ GNU/Linux:
 cmake
 make
 ```
-Finally copy src/libglfw.so into project Bin derectory (if it doesn't exist, create).
+Finally copy src/libglfw.so into project bin derectory (if it doesn't exist, create).
 
 Windows: 
 MinGW:
@@ -53,7 +53,7 @@ MinGW:
 cmake -G "MinGW Makefiles" .\
 make
 ```
-Finally copy src/glfw.dll into project Bin derectory (if it doesn't exist, create).
+Finally copy src/glfw.dll into project bin derectory (if it doesn't exist, create).
 
 VisualStudio:
 Generate studio project with CMake gui, compile it with VisualStudio and copy 
@@ -80,7 +80,7 @@ With MinGW:
 ```
 make -fMakefile.mingw
 ```
-Finally copy FreeImage.dll into project Bin directory.
+Finally copy FreeImage.dll into project bin directory.
 
 With Visual Studio:
 
@@ -97,5 +97,5 @@ Static bindings to OpenCL. Fostom renders picture with OpenCL kernels. Location:
 $ cd Dependencies/cl4d
 $ rdmd compile.d all release
 ```
-There is some big problem. I don't know how cl4d author get OpenCL.lib and i can't get OpenCL.a for Linux.
+There is some big problem. I don't know how cl4d author have got OpenCL.lib and i can't get OpenCL.a for Linux.
 I am going to rewrite cl4d to use dynamic bindings as Derelict does.
