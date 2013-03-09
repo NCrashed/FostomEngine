@@ -1,0 +1,26 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{3947E667-4C90-4C3A-BEB9-7148D6FE0D7C}") = "Client", "Client\Client.dproj", "{DF32363E-1F01-4C88-8ACC-734F07B3D72F}"
+EndProject
+Project("{3947E667-4C90-4C3A-BEB9-7148D6FE0D7C}") = "Server", "Server\Server.dproj", "{4945F8CB-8AE3-45F1-96E5-BF3BBC3EBACB}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{4945F8CB-8AE3-45F1-96E5-BF3BBC3EBACB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4945F8CB-8AE3-45F1-96E5-BF3BBC3EBACB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4945F8CB-8AE3-45F1-96E5-BF3BBC3EBACB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4945F8CB-8AE3-45F1-96E5-BF3BBC3EBACB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DF32363E-1F01-4C88-8ACC-734F07B3D72F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DF32363E-1F01-4C88-8ACC-734F07B3D72F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DF32363E-1F01-4C88-8ACC-734F07B3D72F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DF32363E-1F01-4C88-8ACC-734F07B3D72F}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(MonoDevelopProperties) = preSolution
+		StartupItem = Client\Client.dproj
+	EndGlobalSection
+EndGlobal

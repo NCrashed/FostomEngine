@@ -305,8 +305,7 @@ class RenderSystem
         char* pixels = cast(char*)FreeImage_GetBits(bitmap);
 
         glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, texture.ptr);
-
-        writeln("save");
+		
         for(int pix=0; pix<mGraphicConfigs.screenX*mGraphicConfigs.screenY; pix++)
         {
             pixels[pix*uint.sizeof+2] = (cast(char*)&texture[pix*uint.sizeof])[0];
@@ -642,8 +641,7 @@ private:
 
         GLFWmonitor* mMonitor = null;
         if(!grConf.windowed) mMonitor = glfwGetPrimaryMonitor();
-
-        writeln(grConf.screenX, " ", grConf.screenY, " ", toStringz(tittle));
+		
         mWindow = glfwCreateWindow( grConf.screenX, grConf.screenY, toStringz(tittle), mMonitor, null );
         if ( mWindow is null)
         {

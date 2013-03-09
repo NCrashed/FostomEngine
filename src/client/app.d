@@ -194,7 +194,7 @@ private:
 		mCamera.position.x = 0;
 		mCamera.position.y = 0;
 		mCamera.position.z = 0;
-
+		
 		mCamera.target = vec3(0, 0, -1);
 
 		// Инициализация мышки
