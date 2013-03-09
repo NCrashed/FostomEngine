@@ -204,7 +204,7 @@ class DerelictSDL2ImageLoader : SharedLibLoader
     }
 }
 
-DerelictSDL2ImageLoader DerelictSDL2Image;
+__gshared DerelictSDL2ImageLoader DerelictSDL2Image;
 
 shared static this()
 {
@@ -213,6 +213,5 @@ shared static this()
 
 shared static ~this()
 {
-    if(SharedLibLoader.isAutoUnloadEnabled())
-        DerelictSDL2Image.unload();
+    DerelictSDL2Image.unload();
 }

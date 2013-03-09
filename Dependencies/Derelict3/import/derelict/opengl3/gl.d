@@ -2,18 +2,14 @@ module derelict.opengl3.gl;
 
 public
 {
-    import derelict.opengl3.types;
-    import derelict.opengl3.constants;
     import derelict.opengl3.deprecatedConstants;
-    import derelict.opengl3.functions;
     import derelict.opengl3.deprecatedFunctions;
-    import derelict.opengl3.arb;
+    import derelict.opengl3.gl3;
 }
 
 private
 {
     import derelict.util.loader;
-    import derelict.opengl3.gl3;
     import derelict.opengl3.internal;
 }
 
@@ -152,6 +148,8 @@ class DerelictGLLoader : DerelictGL3Loader
     {
         override void loadSymbols()
         {
+            super.loadSymbols();
+
             bindFunc(cast(void**)&glIsList, "glIsList");
             bindFunc(cast(void**)&glDeleteLists, "glDeleteLists");
             bindFunc(cast(void**)&glGenLists, "glGenLists");
@@ -431,7 +429,7 @@ class DerelictGLLoader : DerelictGL3Loader
 
     private
     {
-       this() {}
+        this() {}
     }
 }
 
@@ -444,6 +442,5 @@ shared static this()
 
 shared static ~this()
 {
-    if(SharedLibLoader.isAutoUnloadEnabled())
-        DerelictGL.unload();
+    DerelictGL.unload();
 }

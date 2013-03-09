@@ -29,7 +29,7 @@ module derelict.assimp.types;
 
 
 // assimp.h
-extern (C) nothrow alias void function(const char*, char*) aiLogStreamCallback;
+extern (C) nothrow alias void function(const(char)*, char*) aiLogStreamCallback;
 
 struct aiLogStream
 {
@@ -127,8 +127,8 @@ struct aiAnimation
 
 
 // aiMaterial.h
-const uint AI_MAX_NUMBER_OF_COLOR_SETS = 0x4;
-const uint AI_MAX_NUMBER_OF_TEXTURECOORDS = 0x4;
+const uint AI_MAX_NUMBER_OF_COLOR_SETS = 0x8;
+const uint AI_MAX_NUMBER_OF_TEXTURECOORDS = 0x8;
 
 enum aiTextureOp : uint
 {
@@ -506,3 +506,14 @@ struct aiMemoryInfo
 const size_t MAXLEN = 1024;
 
 alias int aiBool;
+
+enum AI_FALSE = 0,
+     AI_TRUE = 1;
+
+
+// version.h
+enum ASSIMP_CFLAGS_SHARED = 0x1,
+     ASSIMP_CFLAGS_STLPORT = 0x2,
+     ASSIMP_CFLAGS_DEBUG = 0x4,
+     ASSIMP_CFLAGS_NOBOOST = 0x8,
+     ASSIMP_CFLAGS_SINGLETHREADED = 0x10;

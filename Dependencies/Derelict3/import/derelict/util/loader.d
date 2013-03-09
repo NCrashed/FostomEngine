@@ -40,18 +40,7 @@ class SharedLibLoader
 public:
     this(string libNames)
     {
-        _lib = new SharedLib();
         _libNames = libNames;
-    }
-
-    shared static void disableAutoUnload()
-    {
-        _manualUnload = true;
-    }
-
-    shared static bool isAutoUnloadEnabled() @property
-    {
-        return (_manualUnload == false);
     }
 
     void load()
@@ -106,7 +95,6 @@ protected:
     }
 
 private:
-    shared static bool _manualUnload;
     string _libNames;
     SharedLib _lib;
 }

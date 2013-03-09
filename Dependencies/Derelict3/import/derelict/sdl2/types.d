@@ -34,8 +34,8 @@ private
 }
 
 // From SDL_revision.h
-enum SDL_REVISION = "hg-6217:6952b11b7f46";
-enum SDL_REVISION_NUMBER = 6217;
+enum SDL_REVISION = "hg-6799:ddf4df4dfdd6";
+enum SDL_REVISION_NUMBER = 6799;
 
 // SDL_version.h
 struct SDL_version
@@ -47,8 +47,8 @@ struct SDL_version
 
 enum : Uint8
 {
-    SDL_MAJOR_VERSION = 1,
-    SDL_MINOR_VERSION = 3,
+    SDL_MAJOR_VERSION = 2,
+    SDL_MINOR_VERSION = 0,
     SDL_PATCHLEVEL = 0
 }
 
@@ -257,6 +257,13 @@ enum
     SDL_JOYHATMOTION,
     SDL_JOYBUTTONDOWN,
     SDL_JOYBUTTONUP,
+    SDL_JOYDEVICEADDED,
+    SDL_JOYDEVICEREMOVED,
+    SDL_CONTROLLERAXISMOTION = 0x650,
+    SDL_CONTROLLERBUTTONDOWN,
+    SDL_CONTROLLERBUTTONUP,
+    SDL_CONTROLLERDEVICEADDED,
+    SDL_CONTROLLERDEVICEREMOVED,
     SDL_FINGERDOWN = 0x700,
     SDL_FINGERUP,
     SDL_FINGERMOTION,
@@ -267,9 +274,6 @@ enum
     SDL_MULTIGESTURE,
     SDL_CLIPBOARDUPDATE = 0x900,
     SDL_DROPFILE = 0x1000,
-    SDL_EVENT_COMPAT1 = 0x7000,
-    SDL_EVENT_COMPAT2,
-    SDL_EVENT_COMPAT3,
     SDL_USEREVENT = 0x8000,
     SDL_LASTEVENT = 0xFFFF
 }
@@ -399,6 +403,38 @@ struct SDL_JoyButtonEvent
     Uint8 padding1;
 }
 
+struct SDL_JoyDeviceEvent
+{
+    Uint32 type;
+    Uint32 timestamp;
+    Uint32 which;
+}
+
+struct SDL_ControllerAxisEvent
+{
+    Uint32 type;
+    Uint32 timestamp;
+    Uint8 which;
+    SDL_CONTROLLER_AXIS axis;
+    int value;
+}
+
+struct SDL_ControllerButtonEvent
+{
+    Uint32 type;
+    Uint32 timestamp;
+    Uint8 which;
+    SDL_CONTROLLER_BUTTON button;
+    Uint8 state;
+}
+
+struct SDL_ControllerDeviceEvent
+{
+    Uint32 type;
+    Uint32 timestamp;
+    Uint32 which;
+}
+
 struct SDL_TouchFingerEvent
 {
     Uint32 type;
@@ -485,73 +521,33 @@ struct SDL_SysWMEvent
     SDL_SysWMmsg* msg;
 }
 
-version(SDL_NO_COMPAT)
+union SDL_Event
 {
-    union SDL_Event
-    {
-        Uint32 type;
-        SDL_WindowEvent window;
-        SDL_KeyboardEvent key;
-        SDL_TextEditingEvent edit;
-        SDL_TextInputEvent text;
-        SDL_MouseMotionEvent motion;
-        SDL_MouseButtonEvent button;
-        SDL_MouseWheelEvent wheel;
-        SDL_JoyAxisEvent jaxis;
-        SDL_JoyHatEvent jhat;
-        SDL_JoyButtonEvent jbutton;
-        SDL_QuitEvent quit;
-        SDL_UserEvent user;
-        SDL_SysWMEvent syswm;
-        SDL_TouchFingerEvent tfinger;
-        SDL_TouchButtonEvent tbutton;
-        SDL_MultiGestureEvent mgesture;
-        SDL_DollarGestureEvent dgesture;
-        SDL_DropEvent drop;
-    }
-}
-else
-{
-    struct SDL_ActiveEvent
-    {
-        Uint32 type;
-        Uint32 timestamp;
-        Uint8 gain;
-        Uint8 state;
-    }
+    Uint32 type;
+    SDL_WindowEvent window;
+    SDL_KeyboardEvent key;
+    SDL_TextEditingEvent edit;
+    SDL_TextInputEvent text;
+    SDL_MouseMotionEvent motion;
+    SDL_MouseButtonEvent button;
+    SDL_MouseWheelEvent wheel;
+    SDL_JoyAxisEvent jaxis;
+    SDL_JoyHatEvent jhat;
+    SDL_JoyButtonEvent jbutton;
+    SDL_JoyDeviceEvent jdevice;
+    SDL_ControllerAxisEvent caxis;
+    SDL_ControllerButtonEvent cbutton;
+    SDL_ControllerDeviceEvent cdevice;
+    SDL_QuitEvent quit;
+    SDL_UserEvent user;
+    SDL_SysWMEvent syswm;
+    SDL_TouchFingerEvent tfinger;
+    SDL_TouchButtonEvent tbutton;
+    SDL_MultiGestureEvent mgesture;
+    SDL_DollarGestureEvent dgesture;
+    SDL_DropEvent drop;
 
-    struct SDL_ResizeEvent
-    {
-        Uint32 type;
-        Uint32 timestamp;
-        int w;
-        int h;
-    }
-
-    union SDL_Event
-    {
-        Uint32 type;
-        SDL_WindowEvent window;
-        SDL_KeyboardEvent key;
-        SDL_TextEditingEvent edit;
-        SDL_TextInputEvent text;
-        SDL_MouseMotionEvent motion;
-        SDL_MouseButtonEvent button;
-        SDL_MouseWheelEvent wheel;
-        SDL_JoyAxisEvent jaxis;
-        SDL_JoyHatEvent jhat;
-        SDL_JoyButtonEvent jbutton;
-        SDL_QuitEvent quit;
-        SDL_UserEvent user;
-        SDL_SysWMEvent syswm;
-        SDL_TouchFingerEvent tfinger;
-        SDL_TouchButtonEvent tbutton;
-        SDL_MultiGestureEvent mgesture;
-        SDL_DollarGestureEvent dgesture;
-        SDL_DropEvent drop;
-        SDL_ActiveEvent active;
-        SDL_ResizeEvent resize;
-    }
+    Uint8[56] padding;
 }
 
 alias int SDL_eventaction;
@@ -570,6 +566,72 @@ enum
     SDL_IGNORE = 0,
     SDL_DISABLE = 0,
     SDL_ENABLE = 1,
+}
+
+// SDL_gamecontroller.h
+struct SDL_GameController;
+alias int SDL_CONTROLLER_BINDTYPE;
+enum
+{
+    SDL_CONTROLLER_BINDTYPE_NONE = 0,
+    SDL_CONTROLLER_BINDTYPE_BUTTON,
+    SDL_CONTROLLER_BINDTYPE_AXIS,
+    SDL_CONTROLLER_BINDTYPE_HAT,
+}
+
+struct _SDL_GameControllerHatBind
+{
+    int hat;
+    int hat_mask;
+}
+
+struct SDL_GameControllerButtonBind
+{
+    SDL_CONTROLLER_BINDTYPE m_eBindType;
+    union inner
+    {
+        int button;
+        int axis;
+        _SDL_GameControllerHatBind hat;
+    }
+    alias inner.button button;
+    alias inner.axis axis;
+    alias inner.hat hat;
+}
+
+alias int SDL_CONTROLLER_AXIS;
+enum
+{
+    SDL_CONTROLLER_AXIS_INVALID = -1,
+    SDL_CONTROLLER_AXIS_LEFTX,
+    SDL_CONTROLLER_AXIS_LEFTY,
+    SDL_CONTROLLER_AXIS_RIGHTX,
+    SDL_CONTROLLER_AXIS_RIGHTY,
+    SDL_CONTROLLER_AXIS_TRIGGERLEFT,
+    SDL_CONTROLLER_AXIS_TRIGGERRIGHT,
+    SDL_CONTROLLER_AXIS_MAX
+}
+
+alias int SDL_CONTROLLER_BUTTON;
+enum
+{
+    SDL_CONTROLLER_BUTTON_INVALID = -1,
+    SDL_CONTROLLER_BUTTON_A,
+    SDL_CONTROLLER_BUTTON_B,
+    SDL_CONTROLLER_BUTTON_X,
+    SDL_CONTROLLER_BUTTON_Y,
+    SDL_CONTROLLER_BUTTON_BACK,
+    SDL_CONTROLLER_BUTTON_GUIDE,
+    SDL_CONTROLLER_BUTTON_START,
+    SDL_CONTROLLER_BUTTON_LEFTSTICK,
+    SDL_CONTROLLER_BUTTON_RIGHTSTICK,
+    SDL_CONTROLLER_BUTTON_LEFTSHOULDER,
+    SDL_CONTROLLER_BUTTON_RIGHTSHOULDER,
+    SDL_CONTROLLER_BUTTON_DPAD_UP,
+    SDL_CONTROLLER_BUTTON_DPAD_DOWN,
+    SDL_CONTROLLER_BUTTON_DPAD_LEFT,
+    SDL_CONTROLLER_BUTTON_DPAD_RIGHT,
+    SDL_CONTROLLER_BUTTON_MAX
 }
 
 // SDL_gesture.h
@@ -710,8 +772,14 @@ enum : string
     SDL_HINT_RENDER_OPENGL_SHADERS = "SDL_RENDER_OPENGL_SHADERS",
     SDL_HINT_RENDER_SCALE_QUALITY = "SDL_RENDER_SCALE_QUALITY",
     SDL_HINT_RENDER_VSYNC = "SDL_RENDER_VSYNC",
-    SDL_HINT_IDLE_TIMER_DISABLED = "SDL_HINT_IDLE_TIMER_DISABLED",
+    SDL_HINT_VIDEO_X11_XVIDMODE = "SDL_VIDEO_X11_XVIDMODE",
+    SDL_HINT_VIDEO_X11_XINERAMA = "SDL_VIDEO_X11_XINERAMA",
+    SDL_HINT_VIDEO_X11_XRANDR = "SDL_VIDEO_X11_XRANDR",
+    SDL_HINT_GRAB_KEYBOARD = "SDL_GRAB_KEYBOARD",
+    SDL_HINT_VIDEO_MINIMIZE_ON_FOCUS_LOSS = "SDL_VIDEO_MINIMIZE_ON_FOCUS_LOSS",
+    SDL_HINT_IDLE_TIMER_DISABLED = "SDL_IOS_IDLE_TIMER_DISABLED",
     SDL_HINT_ORIENTATIONS = "SDL_IOS_ORIENTATIONS",
+    SDL_HINT_GAMECONTROLLERCONFIG = "SDL_GAMECONTROLLERCONFIG",
 }
 
 alias int SDL_HintPriority;
@@ -724,6 +792,13 @@ enum
 
 // SDL_joystick.h
 struct SDL_Joystick;
+
+struct JoystickGUID
+{
+    Uint8[16] data;
+}
+
+alias int SDL_JoystickID;
 
 enum : Uint8
 {
@@ -745,6 +820,61 @@ struct SDL_Keysym
     SDL_Keycode sym;
     Uint16 mod;
     Uint32 unicode;
+}
+
+// SDL_messagebox.h
+alias int SDL_MessageBoxFlags;
+enum
+{
+    SDL_MESSAGEBOX_ERROR = 0x00000010,
+    SDL_MESSAGEBOX_WARNING = 0x00000020,
+    SDL_MESSAGEBOX_INFORMATION = 0x00000040,
+}
+
+alias int SDL_MessageBoxButtonFlags;
+enum
+{
+    SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT = 0x00000001,
+    SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT = 0x00000002,
+}
+
+struct SDL_MessageBoxButtonData
+{
+    Uint32 flags;
+    int buttonid;
+    const(char)* text;
+}
+
+struct SDL_MessageBoxColor
+{
+    Uint8 r, g, b;
+}
+
+alias int SDL_MessageBoxColorType;
+enum
+{
+    SDL_MESSAGEBOX_COLOR_BACKGROUND,
+    SDL_MESSAGEBOX_COLOR_TEXT,
+    SDL_MESSAGEBOX_COLOR_BUTTON_BORDER,
+    SDL_MESSAGEBOX_COLOR_BUTTON_BACKGROUND,
+    SDL_MESSAGEBOX_COLOR_BUTTON_SELECTED,
+    SDL_MESSAGEBOX_COLOR_MAX,
+}
+
+struct SDL_MessageBoxColorScheme
+{
+    SDL_MessageBoxColor[SDL_MESSAGEBOX_COLOR_MAX] colors;
+}
+
+struct SDL_MessageBoxData
+{
+    Uint32 flags;
+    SDL_Window* window;
+    const(char)* title;
+    const(char)* message;
+    int numbuttons;
+    const(SDL_MessageBoxButtonData)* buttons;
+    const(SDL_MessageBoxColorScheme)* colorScheme;
 }
 
 // SDL_scancode.h
@@ -1314,6 +1444,7 @@ enum
 {
     SDL_LOG_CATEGORY_APPLICATION,
     SDL_LOG_CATEGORY_ERROR,
+    SDL_LOG_CATEGORY_ASSERT,
     SDL_LOG_CATEGORY_SYSTEM,
     SDL_LOG_CATEGORY_AUDIO,
     SDL_LOG_CATEGORY_VIDEO,
@@ -1354,6 +1485,24 @@ struct SDL_Cursor;
 Uint8 SDL_BUTTON(Uint8 X)
 {
     return cast(Uint8)(1 << (X - 1));
+}
+
+alias int SDL_SystemCursor;
+enum
+{
+    SDL_SYSTEM_CURSOR_ARROW,
+    SDL_SYSTEM_CURSOR_IBEAM,
+    SDL_SYSTEM_CURSOR_WAIT,
+    SDL_SYSTEM_CURSOR_CROSSHAIR,
+    SDL_SYSTEM_CURSOR_WAITARROW,
+    SDL_SYSTEM_CURSOR_SIZENWSE,
+    SDL_SYSTEM_CURSOR_SIZENESW,
+    SDL_SYSTEM_CURSOR_SIZEWE,
+    SDL_SYSTEM_CURSOR_SIZENS,
+    SDL_SYSTEM_CURSOR_SIZEALL,
+    SDL_SYSTEM_CURSOR_NO,
+    SDL_SYSTEM_CURSOR_HAND,
+    SDL_NUM_SYSTEM_CURSORS
 }
 
 enum : Uint8
@@ -1678,6 +1827,7 @@ struct SDL_RendererInfo
     int max_texture_height;
 }
 
+alias int SDL_TextureAccess;
 enum
 {
     SDL_TEXTUREACCESS_STATIC,
@@ -1685,11 +1835,20 @@ enum
     SDL_TEXTUREACCESS_TARGET,
 }
 
+alias int SDL_TextureModulate;
 enum
 {
     SDL_TEXTUREMODULATE_NONE = 0x00000000,
     SDL_TEXTUREMODULATE_COLOR = 0x00000001,
     SDL_TEXTUREMODULATE_ALPHA = 0x00000002
+}
+
+alias int SDL_RendererFlip;
+enum
+{
+    SDL_FLIP_NONE = 0x00000000,
+    SDL_FLIP_HORIZONTAL = 0x00000001,
+    SDL_FLIP_VERTICAL = 0x00000002,
 }
 
 struct SDL_Renderer;
@@ -1700,7 +1859,8 @@ struct SDL_RWops
 {
     extern(C)
     {
-        c_long function(SDL_RWops*, c_long, int) seek;
+        Sint64 function(SDL_RWops*) size;
+        Sint64 function(SDL_RWops*, Sint64, int) seek;
         size_t function(SDL_RWops*, void*, size_t, size_t) read;
         size_t function(SDL_RWops*, const(void)*, size_t, size_t) write;
         int function(SDL_RWops*) close;
@@ -1759,8 +1919,9 @@ enum
     RW_SEEK_END = 2,
 }
 
-c_long SDL_RWseek(SDL_RWops* ctx, c_long offset, int whence) { return ctx.seek(ctx, offset, whence); }
-c_long SDL_RWtell(SDL_RWops* ctx) { return ctx.seek(ctx, 0, RW_SEEK_CUR); }
+Sint64 SDL_RWsize(SDL_RWops* ctx) { return ctx.size(ctx); }
+Sint64 SDL_RWseek(SDL_RWops* ctx, Sint64 offset, int whence) { return ctx.seek(ctx, offset, whence); }
+Sint64 SDL_RWtell(SDL_RWops* ctx) { return ctx.seek(ctx, 0, RW_SEEK_CUR); }
 size_t SDL_RWread(SDL_RWops* ctx, void* ptr, size_t size, size_t n) { return ctx.read(ctx, ptr, size, n); }
 size_t SDL_RWwrite(SDL_RWops* ctx, const(void)* ptr, size_t size, size_t n) { return ctx.write(ctx, ptr, size, n); }
 int SDL_RWclose(SDL_RWops* ctx) { return ctx.close(ctx); }
@@ -1802,7 +1963,8 @@ struct SDL_WindowShapeMode
 // SDL_surface.h
 enum
 {
-    SLD_REALLOC = 0x00000001,
+    SDL_SWSURFACE = 0,
+    SDL_PREALLOC = 0x00000001,
     SDL_RLEACCEL = 0x00000002,
     SDL_DONTFREE = 0x00000004,
 }
@@ -1895,6 +2057,7 @@ enum
     SDL_WINDOW_INPUT_GRABBED = 0x00000100,
     SDL_WINDOW_INPUT_FOCUS = 0x00000200,
     SDL_WINDOW_MOUSE_FOCUS = 0x00000400,
+    SDL_WINDOW_FULLSCREEN_DESKTOP = SDL_WINDOW_FULLSCREEN | 0x00001000,
     SDL_WINDOW_FOREIGN = 0x00000800
 }
 
@@ -1961,7 +2124,7 @@ enum
 {
     SDL_GL_CONTEXT_PROFILE_CORE = 0x0001,
     SDL_GL_CONTEXT_PROFILE_COMPATIBILITY = 0x0002,
-    SDL_GL_CONTEXT_PROFILE_ES2 = 0x0004,
+    SDL_GL_CONTEXT_PROFILE_ES = 0x0004,
 }
 
 alias int SDL_GLcontextFlag;

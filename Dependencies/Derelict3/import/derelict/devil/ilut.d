@@ -35,6 +35,8 @@ private
 
     static if(Derelict_OS_Windows)
         enum libNames = "ilut.dll";
+    else static if (Derelict_OS_Mac)
+        enum libNames = "libILUT.dylib";
     else static if(Derelict_OS_Posix)
         enum libNames = "libILUT.so";
     else
@@ -264,6 +266,5 @@ shared static this()
 
 shared static ~this()
 {
-    if(SharedLibLoader.isAutoUnloadEnabled())
-        DerelictILUT.unload();
+    DerelictILUT.unload();
 }

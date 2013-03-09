@@ -33,12 +33,13 @@ public
     import derelict.opengl3.constants;
     import derelict.opengl3.functions;
     import derelict.opengl3.arb;
+    import derelict.opengl3.ext;
 }
 
 private
 {
+    import std.algorithm;
     import std.conv;
-    import std.string;
 
     import derelict.util.loader;
     import derelict.util.exception;
@@ -72,11 +73,6 @@ class DerelictGL3Loader : SharedLibLoader
         {
             return _loadedVersion;
         }
-		
-		void bindExtFunc(void** ptr, string symName)
-		{
-			bindFunc(ptr, symName);
-		}
 
         GLVersion reload()
         {
@@ -673,6 +669,7 @@ class DerelictGL3Loader : SharedLibLoader
             }
 
             loadARB(glVer);
+            loadEXT(glVer);
 
             _loadedVersion = glVer;
             return glVer;
@@ -681,6 +678,11 @@ class DerelictGL3Loader : SharedLibLoader
 
     protected
     {
+        this()
+        {
+            super(libNames);
+        }
+
         override void loadSymbols()
         {
             // OpenGL 1.0
@@ -704,6 +706,7 @@ class DerelictGL3Loader : SharedLibLoader
             bindFunc(cast(void**)&glClearDepth, "glClearDepth");
             bindFunc(cast(void**)&glStencilMask, "glStencilMask");
             bindFunc(cast(void**)&glColorMask, "glColorMask");
+            bindFunc(cast(void**)&glDepthMask, "glDepthMask");
             bindFunc(cast(void**)&glDisable, "glDisable");
             bindFunc(cast(void**)&glEnable, "glEnable");
             bindFunc(cast(void**)&glFinish, "glFinish");
@@ -753,47 +756,40 @@ class DerelictGL3Loader : SharedLibLoader
         }
     }
 
-    package
-    {
-        this()
-        {
-            super(libNames);
-        }
-    }
-
     private
     {
-
         GLVersion findMaxAvailable()
         {
             string verstr = to!string(glGetString(GL_VERSION));
-            if(verstr.indexOf("4.2") != -1)
+            if(verstr.canFind("4.3"))
+                return GLVersion.HighestSupported;
+            else if(verstr.canFind("4.2"))
                 return GLVersion.GL42;
-            else if(verstr.indexOf("4.1") != -1)
+            else if(verstr.canFind("4.1"))
                 return GLVersion.GL41;
-            else if(verstr.indexOf("4.0") != -1)
+            else if(verstr.canFind("4.0"))
                 return GLVersion.GL40;
-            else if(verstr.indexOf("3.3") != -1)
+            else if(verstr.canFind("3.3"))
                 return GLVersion.GL33;
-            else if(verstr.indexOf("3.2") != -1)
+            else if(verstr.canFind("3.2"))
                 return GLVersion.GL32;
-            else if(verstr.indexOf("3.1") != -1)
+            else if(verstr.canFind("3.1"))
                 return GLVersion.GL31;
-            else if(verstr.indexOf("3.0") != -1)
+            else if(verstr.canFind("3.0"))
                 return GLVersion.GL30;
-            else if(verstr.indexOf("2.1") != -1)
+            else if(verstr.canFind("2.1"))
                 return GLVersion.GL21;
-            else if(verstr.indexOf("2.0") != -1)
+            else if(verstr.canFind("2.0"))
                 return GLVersion.GL20;
-            else if(verstr.indexOf("1.5") != -1)
+            else if(verstr.canFind("1.5"))
                 return GLVersion.GL15;
-            else if(verstr.indexOf("1.4") != -1)
+            else if(verstr.canFind("1.4"))
                 return GLVersion.GL14;
-            else if(verstr.indexOf("1.3") != -1)
+            else if(verstr.canFind("1.3"))
                 return GLVersion.GL13;
-            else if(verstr.indexOf("1.2") != -1)
+            else if(verstr.canFind("1.2"))
                 return GLVersion.GL12;
-            else if(verstr.indexOf("1.1") != -1)
+            else if(verstr.canFind("1.1"))
                 return GLVersion.GL11;
 
             // assume new version of OpenGL
@@ -818,7 +814,6 @@ shared static this()
 
 shared static ~this()
 {
-    if(SharedLibLoader.isAutoUnloadEnabled())
-        DerelictGL3.unload();
+    DerelictGL3.unload();
 }
 

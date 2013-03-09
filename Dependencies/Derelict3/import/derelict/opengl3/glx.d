@@ -172,7 +172,7 @@ static if(Derelict_OS_Posix && !Derelict_OS_Mac)
 
     package
     {
-        void loadPlatformGL(void delegate(void**, string, bool doThrow = true) bindFunc)
+        void loadPlatformGL(void delegate(void**, string, bool doThrow) bindFunc)
         {
             bindFunc(cast(void**)&glXChooseVisual, "glXChooseVisual", true);
             bindFunc(cast(void**)&glXCopyContext, "glXCopyContext", true);

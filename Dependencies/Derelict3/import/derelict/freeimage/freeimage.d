@@ -39,7 +39,7 @@ private
     import derelict.util.system;
 
     static if(Derelict_OS_Windows)
-        enum libNames = "FreeImage.dll";    
+        enum libNames = "FreeImage.dll";
     else static if(Derelict_OS_Posix)
         enum libNames = "libfreeimage.so,libfreeimage.so.3";
     else
@@ -91,7 +91,7 @@ class DerelictFILoader : SharedLibLoader
             myBindFunc(FreeImage_SetOutputMessage, "FreeImage_SetOutputMessage");
 
             // This one isn't mangled like the rest, likely because of the variable args.
-            //bindFunc(cast(void**)&FreeImage_OutputMessageProc, "FreeImage_OutputMessageProc");
+            bindFunc(cast(void**)&FreeImage_OutputMessageProc, "FreeImage_OutputMessageProc");
 
             myBindFunc(FreeImage_Allocate, "FreeImage_Allocate");
             myBindFunc(FreeImage_AllocateT, "FreeImage_AllocateT");
@@ -116,7 +116,10 @@ class DerelictFILoader : SharedLibLoader
             myBindFunc(FreeImage_LoadMultiBitmapFromMemory, "FreeImage_LoadMultiBitmapFromMemory");
             myBindFunc(FreeImage_SaveMultiBitmapToMemory, "FreeImage_SaveMultiBitmapToMemory");
             myBindFunc(FreeImage_RegisterLocalPlugin, "FreeImage_RegisterLocalPlugin");
-            //myBindFunc(FreeImage_RegisterExternalPlugin, "FreeImage_RegisterExternalPlugin");
+
+            static if (Derelict_OS_Windows)
+                myBindFunc(FreeImage_RegisterExternalPlugin, "FreeImage_RegisterExternalPlugin");
+
             myBindFunc(FreeImage_GetFIFCount, "FreeImage_GetFIFCount");
             myBindFunc(FreeImage_SetPluginEnabled, "FreeImage_SetPluginEnabled");
             myBindFunc(FreeImage_IsPluginEnabled, "FreeImage_IsPluginEnabled");
@@ -135,8 +138,8 @@ class DerelictFILoader : SharedLibLoader
             myBindFunc(FreeImage_FIFSupportsExportType, "FreeImage_FIFSupportsExportType");
             myBindFunc(FreeImage_FIFSupportsICCProfiles, "FreeImage_FIFSupportsICCProfiles");
             myBindFunc(FreeImage_FIFSupportsNoPixels, "FreeImage_FIFSupportsNoPixels");
-            //myBindFunc(FreeImage_OpenMultiBitmap, "FreeImage_OpenMultiBitmap");
-            //myBindFunc(FreeImage_OpenMultiBitmapFromHandle, "FreeImage_OpenMultiBitmapFromHandle");
+            myBindFunc(FreeImage_OpenMultiBitmap, "FreeImage_OpenMultiBitmap");
+            myBindFunc(FreeImage_OpenMultiBitmapFromHandle, "FreeImage_OpenMultiBitmapFromHandle");
             myBindFunc(FreeImage_SaveMultiBitmapToHandle, "FreeImage_SaveMultiBitmapToHandle");
             myBindFunc(FreeImage_CloseMultiBitmap, "FreeImage_CloseMultiBitmap");
             myBindFunc(FreeImage_GetPageCount, "FreeImage_GetPageCount");
@@ -343,6 +346,5 @@ shared static this()
 
 shared static ~this()
 {
-    if(SharedLibLoader.isAutoUnloadEnabled())
-        DerelictFI.unload();
+    DerelictFI.unload();
 }

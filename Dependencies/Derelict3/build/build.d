@@ -1,23 +1,28 @@
 module derelict;
 
+import std.path : dirName;
 import std.stdio : writefln, writeln;
 import std.process : shell, ErrnoException;
 import std.file : dirEntries, SpanMode;
 import std.array : endsWith;
 import std.string : format, toUpper, capitalize;
 
-// Output configuration
-enum outdir = "../lib/";
+enum MajorVersion = "3";
+enum MinorVersion = "0";
+enum BumpVersion  = "0";
+enum FullVersion  = MajorVersion ~"."~ MinorVersion ~"."~ BumpVersion;
 
 version(Windows)
 {
     enum prefix = "";
-    enum extension = ".lib";
+    version(Shared) enum extension = ".dll";
+    else enum extension = ".lib";
 }
 else version(Posix)
 {
     enum prefix = "lib";
-    enum extension = ".a";
+    version(Shared) enum extension = ".so";
+    else enum extension = ".a";
 }
 else
 {
@@ -27,30 +32,42 @@ else
 // Compiler configuration
 version(DigitalMars)
 {
+    version(Shared)
+        static assert(false, "Shared library support is not yet available with DMD.");
+
     pragma(msg, "Using the Digital Mars DMD compiler.");
     enum compilerOptions = "-lib -O -release -inline -property -w -wi";
-    string buildCompileString(string files, string packageName)
+    string buildCompileString(string files, string libName)
     {
-        string libName = format("%s%s%s%s", prefix, "Derelict", packageName, extension);
-        return format("dmd %s -I../import -of%s%s %s", compilerOptions, outdir, libName, files);
+        return format("dmd %s -I%s -of%s%s %s", compilerOptions, importPath, outdir, libName, files);
     }
 }
 else version(GNU)
 {
     pragma(msg, "Using the GNU GDC compiler.");
-    enum compilerOptions = "-s -O3 -Wall";
-    string buildCompileString(string files, string packageName)
+    version(Shared)
+        enum compilerOptions = "-s -O3 -Wall -shared";
+    else
+        enum compilerOptions = "-s -O3 -Wall";
+    string buildCompileString(string files, string libName)
     {
-        return format("gdc %s -I../import -o %s%s%s%s%s", compilerOptions, outdir, prefix, packageName, extension, files);
+        version(Shared)
+            return format("gdc %s -Xlinker -soname=%s.%s -I../import -o %s%s.%s %s", compilerOptions, libName,MajorVersion, outdir, libName, FullVersion, files);
+        else
+            return format("gdc %s -I../import -o %s%s %s", compilerOptions, outdir, libName, files);
     }
 }
 else version(LDC)
 {
     pragma(msg, "Using the LDC compiler.");
-    enum compilerOptions = "-lib -O -release -enable-inlining -property -w -wi";
-    string buildCompileString(string files, string packageName)
+    version(Shared) enum compilerOptions = "-shared -O -release -enable-inlining -property -w -wi";
+    else enum compilerOptions = "-lib -O -release -enable-inlining -property -w -wi";
+    string buildCompileString(string files, string libName)
     {
-        return format("ldc2 %s -I../import -of%s%s%s%s%s", compilerOptions, outdir, prefix, packageName, extension, files);
+        version(Shared)
+            return format("ldc2 %s -soname=%s.%s -I../import -of%s%s.%s %s", compilerOptions, libName, MajorVersion, outdir, libName, FullVersion, files);
+        else
+            return format("ldc2 %s -I../import -of%s%s %s", compilerOptions, outdir, libName, files);
     }
 }
 else
@@ -58,40 +75,50 @@ else
     static assert(false, "Unknown compiler.");
 }
 
-
 // Package names
 enum packUtil = "Util";
 enum packGL3 = "GL3";
 enum packGLFW3 = "GLFW3";
 enum packIL = "IL";
 enum packAL = "AL";
-enum packALURE = "ALURE";
+enum packALURE  = "ALURE";
 enum packFT = "FT";
 enum packSDL2 = "SDL2";
 enum packODE = "ODE";
 enum packASSIMP = "ASSIMP";
 enum packFG = "FG";
 enum packFI = "FI";
-enum packGLU = "GLU";
+enum packSFML2 = "SFML2";
+enum packLua = "Lua";
+enum packTCOD = "TCOD";
+enum packOGG = "OGG";
+enum packPQ = "PQ";
 
 // Source paths
 enum srcDerelict = "../import/derelict/";
 enum srcUtil = srcDerelict ~ "util/";
 enum srcGL3 = srcDerelict ~ "opengl3/";
-enum srcGLFW3 = srcDerelict ~ "glfw3/";
+enum srcGLFW3  = srcDerelict ~ "glfw3/";
 enum srcIL = srcDerelict ~ "devil/";
-enum srcAL = srcDerelict ~ "openal/";
+enum srcAL= srcDerelict ~ "openal/";
 enum srcALURE = srcDerelict ~ "alure/";
 enum srcFT = srcDerelict ~ "freetype/";
 enum srcSDL2 = srcDerelict ~ "sdl2/";
 enum srcODE = srcDerelict ~ "ode/";
 enum srcASSIMP = srcDerelict ~ "assimp/";
-enum srcFG = srcDerelict ~ "freeglut/";
+enum srcFG  = srcDerelict ~ "freeglut/";
 enum srcFI = srcDerelict ~ "freeimage/";
-enum srcGLU = srcDerelict ~ "glu/";
+enum srcSFML2 = srcDerelict ~ "sfml2/";
+enum srcLua = srcDerelict ~ "lua/";
+enum srcTCOD = srcDerelict ~ "tcod/";
+enum srcOGG = srcDerelict ~ "ogg/";
+enum srcPQ = srcDerelict ~ "pq/";
 
 // Map package names to source paths.
 string[string] pathMap;
+string buildPath;
+string importPath = "../import";
+string outdir = "../lib/";
 
 static this()
 {
@@ -110,12 +137,32 @@ static this()
         packASSIMP : srcASSIMP,
         packFG : srcFG,
         packFI : srcFI,
-	packGLU: srcGLU
+        packSFML2 : srcSFML2,
+        packLua : srcLua,
+        packTCOD : srcTCOD,
+        packOGG : srcOGG,
+        packPQ : srcPQ
     ];
 }
 
 int main(string[] args)
 {
+    // Determine the path to this executable so that imports and source files can be found
+    // no matter what the working directory.
+    buildPath = args[0].dirName() ~ "/";
+
+    if(buildPath != "./")
+    {
+        // Concat the build path with the import directory.
+        importPath = buildPath ~ importPath;
+        outdir = buildPath ~ outdir;
+
+        // fix up the package paths
+        auto keys = pathMap.keys;
+        foreach(i, s; pathMap.values)
+            pathMap[keys[i]] = buildPath ~ s;
+    }
+
     if(args.length == 1)
         buildAll();
     else
@@ -189,7 +236,8 @@ void buildPackage(string packageName)
         }
     }
 
-    string arg = buildCompileString(joined, packageName);
+    string libName = format("%s%s%s%s", prefix, "Derelict", packageName, extension);
+    string arg = buildCompileString(joined, libName);
 
     string s = shell(arg);
     writeln(s);

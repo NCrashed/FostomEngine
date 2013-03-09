@@ -41,7 +41,7 @@ private
     static if(Derelict_OS_Windows)
         enum libNames = "SDL2.dll";
     else static if(Derelict_OS_Mac)
-        enum libNames = "../Frameworks/SDL2.framework/SDL2, /Library/Frameworks/SDL2.framework/SDL2, /System/Library/Frameworks/SDL2.framework/SDL2";
+        enum libNames = "/usr/local/lib/libSDL2.dylib, ../Frameworks/SDL2.framework/SDL2, /Library/Frameworks/SDL2.framework/SDL2, /System/Library/Frameworks/SDL2.framework/SDL2";
     else static if(Derelict_OS_Posix)
         enum libNames = "libSDL2.so,/usr/local/lib/libSDL2.so";
     else
@@ -119,6 +119,20 @@ class DerelictSDL2Loader : SharedLibLoader
             bindFunc(cast(void**)&SDL_FilterEvents, "SDL_FilterEvents");
             bindFunc(cast(void**)&SDL_EventState, "SDL_EventState");
             bindFunc(cast(void**)&SDL_RegisterEvents, "SDL_RegisterEvents");
+            bindFunc(cast(void**)&SDL_IsGameController, "SDL_IsGameController");
+            bindFunc(cast(void**)&SDL_GameControllerNameForIndex, "SDL_GameControllerNameForIndex");
+            bindFunc(cast(void**)&SDL_GameControllerOpen, "SDL_GameControllerOpen");
+            bindFunc(cast(void**)&SDL_GameControllerName, "SDL_GameControllerName");
+            bindFunc(cast(void**)&SDL_GameControllerGetAttached, "SDL_GameControllerGetAttached");
+            bindFunc(cast(void**)&SDL_GameControllerGetJoystick, "SDL_GameControllerGetJoystick");
+            bindFunc(cast(void**)&SDL_GameControllerEventState, "SDL_GameControllerEventState");
+            bindFunc(cast(void**)&SDL_GameControllerGetAxisFromString, "SDL_GameControllerGetAxisFromString");
+            bindFunc(cast(void**)&SDL_GameControllerGetBindForAxis, "SDL_GameControllerGetBindForAxis");
+            bindFunc(cast(void**)&SDL_GameControllerGetAxis, "SDL_GameControllerGetAxis");
+            bindFunc(cast(void**)&SDL_GameControllerGetButtonFromString, "SDL_GameControllerGetButtonFromString");
+            bindFunc(cast(void**)&SDL_GameControllerGetBindForButton, "SDL_GameControllerGetBindForButton");
+            bindFunc(cast(void**)&SDL_GameControllerGetButton, "SDL_GameControllerGetButton");
+            bindFunc(cast(void**)&SDL_GameControllerClose, "SDL_GameControllerClose");   
             bindFunc(cast(void**)&SDL_RecordGesture, "SDL_RecordGesture");
             bindFunc(cast(void**)&SDL_SaveAllDollarTemplates, "SDL_SaveAllDollarTemplates");
             bindFunc(cast(void**)&SDL_SaveDollarTemplate, "SDL_SaveDollarTemplate");
@@ -162,10 +176,15 @@ class DerelictSDL2Loader : SharedLibLoader
 //            bindFunc(cast(void**)&SDL_GetInputDeviceName, "SDL_GetInputDeviceName");
 //            bindFunc(cast(void**)&SDL_IsDeviceDisconnected, "SDL_IsDeviceDisconnected");
             bindFunc(cast(void**)&SDL_NumJoysticks, "SDL_NumJoysticks");
-            bindFunc(cast(void**)&SDL_JoystickName, "SDL_JoystickName");
+            bindFunc(cast(void**)&SDL_JoystickNameForIndex, "SDL_JoystickNameForIndex");
             bindFunc(cast(void**)&SDL_JoystickOpen, "SDL_JoystickOpen");
-            bindFunc(cast(void**)&SDL_JoystickOpened, "SDL_JoystickOpened");
-            bindFunc(cast(void**)&SDL_JoystickIndex, "SDL_JoystickIndex");
+            bindFunc(cast(void**)&SDL_JoystickName, "SDL_JoystickName");
+            bindFunc(cast(void**)&SDL_JoystickGetDeviceGUID, "SDL_JoystickGetDeviceGUID");
+            bindFunc(cast(void**)&SDL_JoystickGetGUID, "SDL_JoystickGetGUID");
+            bindFunc(cast(void**)&SDL_JoystickGetGUIDString, "SDL_JoystickGetGUIDString");
+            bindFunc(cast(void**)&SDL_JoystickGetGUIDFromString, "SDL_JoystickGetGUIDFromString");
+            bindFunc(cast(void**)&SDL_JoystickGetAttached, "SDL_JoystickGetAttached");
+            bindFunc(cast(void**)&SDL_JoystickInstanceID, "SDL_JoystickInstanceID");
             bindFunc(cast(void**)&SDL_JoystickNumAxes, "SDL_JoystickNumAxes");
             bindFunc(cast(void**)&SDL_JoystickNumBalls, "SDL_JoystickNumBalls");
             bindFunc(cast(void**)&SDL_JoystickNumHats, "SDL_JoystickNumHats");
@@ -188,8 +207,11 @@ class DerelictSDL2Loader : SharedLibLoader
             bindFunc(cast(void**)&SDL_GetKeyName, "SDL_GetKeyName");
             bindFunc(cast(void**)&SDL_GetKeyFromName, "SDL_GetKeyFromName");
             bindFunc(cast(void**)&SDL_StartTextInput, "SDL_StartTextInput");
+            bindFunc(cast(void**)&SDL_IsTextInputActive, "SDL_IsTextInputActive");
             bindFunc(cast(void**)&SDL_StopTextInput, "SDL_StopTextInput");
             bindFunc(cast(void**)&SDL_SetTextInputRect, "SDL_SetTextInputRect");
+            bindFunc(cast(void**)&SDL_HasScreenKeyboardSupport, "SDL_HasScreenKeyboardSupport");
+            bindFunc(cast(void**)&SDL_IsScreenKeyboardShown, "SDL_IsScreenKeyboardShown");
             bindFunc(cast(void**)&SDL_LoadObject, "SDL_LoadObject");
             bindFunc(cast(void**)&SDL_LoadFunction, "SDL_LoadFunction");
             bindFunc(cast(void**)&SDL_UnloadObject, "SDL_UnloadObject");
@@ -208,6 +230,8 @@ class DerelictSDL2Loader : SharedLibLoader
             bindFunc(cast(void**)&SDL_LogMessageV, "SDL_LogMessageV");
             bindFunc(cast(void**)&SDL_LogGetOutputFunction, "SDL_LogGetOutputFunction");
             bindFunc(cast(void**)&SDL_LogSetOutputFunction, "SDL_LogSetOutputFunction");
+            bindFunc(cast(void**)&SDL_ShowMessageBox, "SDL_ShowMessageBox");
+            bindFunc(cast(void**)&SDL_ShowSimpleMessageBox, "SDL_ShowSimpleMessageBox");
             bindFunc(cast(void**)&SDL_GetMouseFocus, "SDL_GetMouseFocus");
             bindFunc(cast(void**)&SDL_GetMouseState, "SDL_GetMouseState");
             bindFunc(cast(void**)&SDL_GetRelativeMouseState, "SDL_GetRelativeMouseState");
@@ -216,6 +240,7 @@ class DerelictSDL2Loader : SharedLibLoader
             bindFunc(cast(void**)&SDL_GetRelativeMouseMode, "SDL_GetRelativeMouseMode");
             bindFunc(cast(void**)&SDL_CreateCursor, "SDL_CreateCursor");
             bindFunc(cast(void**)&SDL_CreateColorCursor, "SDL_CreateColorCursor");
+            bindFunc(cast(void**)&SDL_CreateSystemCursor, "SDL_CreateSystemCursor");
             bindFunc(cast(void**)&SDL_SetCursor, "SDL_SetCursor");
             bindFunc(cast(void**)&SDL_GetCursor, "SDL_GetCursor");
             bindFunc(cast(void**)&SDL_FreeCursor, "SDL_FreeCursor");
@@ -243,6 +268,7 @@ class DerelictSDL2Loader : SharedLibLoader
             bindFunc(cast(void**)&SDL_IntersectRectAndLine, "SDL_IntersectRectAndLine");
             bindFunc(cast(void**)&SDL_GetNumRenderDrivers, "SDL_GetNumRenderDrivers");
             bindFunc(cast(void**)&SDL_GetRenderDriverInfo, "SDL_GetRenderDriverInfo");
+            bindFunc(cast(void**)&SDL_CreateWindowAndRenderer, "SDL_CreateWindowAndRenderer");
             bindFunc(cast(void**)&SDL_CreateRenderer, "SDL_CreateRenderer");
             bindFunc(cast(void**)&SDL_CreateSoftwareRenderer, "SDL_CreateSoftwareRenderer");
             bindFunc(cast(void**)&SDL_GetRendererInfo, "SDL_GetRendererInfo");
@@ -260,8 +286,13 @@ class DerelictSDL2Loader : SharedLibLoader
             bindFunc(cast(void**)&SDL_UnlockTexture, "SDL_UnlockTexture");
             bindFunc(cast(void**)&SDL_RenderTargetSupported, "SDL_RenderTargetSupported");
             bindFunc(cast(void**)&SDL_SetRenderTarget, "SDL_SetRenderTarget");
+            bindFunc(cast(void**)&SDL_GetRenderTarget, "SDL_GetRenderTarget");
+            bindFunc(cast(void**)&SDL_RenderSetLogicalSize, "SDL_RenderSetLogicalSize");
+            bindFunc(cast(void**)&SDL_RenderGetLogicalSize, "SDL_RenderGetLogicalSize");
             bindFunc(cast(void**)&SDL_RenderSetViewport, "SDL_RenderSetViewport");
             bindFunc(cast(void**)&SDL_RenderGetViewport, "SDL_RenderGetViewport");
+            bindFunc(cast(void**)&SDL_RenderSetScale, "SDL_RenderSetScale");
+            bindFunc(cast(void**)&SDL_RenderGetScale, "SDL_RenderGetScale");
             bindFunc(cast(void**)&SDL_SetRenderDrawColor, "SDL_SetRenderDrawColor");
             bindFunc(cast(void**)&SDL_GetRenderDrawColor, "SDL_GetRenderDrawColor");
             bindFunc(cast(void**)&SDL_SetRenderDrawBlendMode, "SDL_SetRenderDrawBlendMode");
@@ -276,22 +307,27 @@ class DerelictSDL2Loader : SharedLibLoader
             bindFunc(cast(void**)&SDL_RenderFillRect, "SDL_RenderFillRect");
             bindFunc(cast(void**)&SDL_RenderFillRects, "SDL_RenderFillRects");
             bindFunc(cast(void**)&SDL_RenderCopy, "SDL_RenderCopy");
+            bindFunc(cast(void**)&SDL_RenderCopyEx, "SDL_RenderCopyEx");
             bindFunc(cast(void**)&SDL_RenderReadPixels, "SDL_RenderReadPixels");
             bindFunc(cast(void**)&SDL_RenderPresent, "SDL_RenderPresent");
             bindFunc(cast(void**)&SDL_DestroyTexture, "SDL_DestroyTexture");
             bindFunc(cast(void**)&SDL_DestroyRenderer, "SDL_DestroyRenderer");
+            bindFunc(cast(void**)&SDL_GL_BindTexture, "SDL_GL_BindTexture");
+            bindFunc(cast(void**)&SDL_GL_UnbindTexture, "SDL_GL_UnbindTexture");
             bindFunc(cast(void**)&SDL_RWFromFile, "SDL_RWFromFile");
             bindFunc(cast(void**)&SDL_RWFromFP, "SDL_RWFromFP");
             bindFunc(cast(void**)&SDL_RWFromMem, "SDL_RWFromMem");
             bindFunc(cast(void**)&SDL_RWFromConstMem, "SDL_RWFromConstMem");
             bindFunc(cast(void**)&SDL_AllocRW, "SDL_AllocRW");
             bindFunc(cast(void**)&SDL_FreeRW, "SDL_FreeRW");
+            bindFunc(cast(void**)&SDL_ReadU8, "SDL_ReadU8");
             bindFunc(cast(void**)&SDL_ReadLE16, "SDL_ReadLE16");
             bindFunc(cast(void**)&SDL_ReadBE16, "SDL_ReadBE16");
             bindFunc(cast(void**)&SDL_ReadLE32, "SDL_ReadLE32");
             bindFunc(cast(void**)&SDL_ReadBE32, "SDL_ReadBE32");
             bindFunc(cast(void**)&SDL_ReadLE64, "SDL_ReadLE64");
             bindFunc(cast(void**)&SDL_ReadBE64, "SDL_ReadBE64");
+            bindFunc(cast(void**)&SDL_WriteU8, "SDL_WriteU8");
             bindFunc(cast(void**)&SDL_WriteLE16, "SDL_WriteLE16");
             bindFunc(cast(void**)&SDL_WriteBE16, "SDL_WriteBE16");
             bindFunc(cast(void**)&SDL_WriteLE32, "SDL_WriteLE32");
@@ -348,13 +384,14 @@ class DerelictSDL2Loader : SharedLibLoader
             bindFunc(cast(void**)&SDL_VideoQuit, "SDL_VideoQuit");
             bindFunc(cast(void**)&SDL_GetCurrentVideoDriver, "SDL_GetCurrentVideoDriver");
             bindFunc(cast(void**)&SDL_GetNumVideoDisplays, "SDL_GetNumVideoDisplays");
+            bindFunc(cast(void**)&SDL_GetDisplayName, "SDL_GetDisplayName");
             bindFunc(cast(void**)&SDL_GetDisplayBounds, "SDL_GetDisplayBounds");
             bindFunc(cast(void**)&SDL_GetNumDisplayModes, "SDL_GetNumDisplayModes");
             bindFunc(cast(void**)&SDL_GetDisplayMode, "SDL_GetDisplayMode");
             bindFunc(cast(void**)&SDL_GetDesktopDisplayMode, "SDL_GetDesktopDisplayMode");
             bindFunc(cast(void**)&SDL_GetCurrentDisplayMode, "SDL_GetCurrentDisplayMode");
             bindFunc(cast(void**)&SDL_GetClosestDisplayMode, "SDL_GetClosestDisplayMode");
-            bindFunc(cast(void**)&SDL_GetWindowDisplay, "SDL_GetWindowDisplay");
+            bindFunc(cast(void**)&SDL_GetWindowDisplayIndex, "SDL_GetWindowDisplayIndex");
             bindFunc(cast(void**)&SDL_SetWindowDisplayMode, "SDL_SetWindowDisplayMode");
             bindFunc(cast(void**)&SDL_GetWindowDisplayMode, "SDL_GetWindowDisplayMode");
             bindFunc(cast(void**)&SDL_GetWindowPixelFormat, "SDL_GetWindowPixelFormat");
@@ -372,6 +409,11 @@ class DerelictSDL2Loader : SharedLibLoader
             bindFunc(cast(void**)&SDL_GetWindowPosition, "SDL_GetWindowPosition");
             bindFunc(cast(void**)&SDL_SetWindowSize, "SDL_SetWindowSize");
             bindFunc(cast(void**)&SDL_GetWindowSize, "SDL_GetWindowSize");
+            bindFunc(cast(void**)&SDL_SetWindowMinimumSize, "SDL_SetWindowMinimumSize");
+            bindFunc(cast(void**)&SDL_GetWindowMinimumSize, "SDL_GetWindowMinimumSize");
+            bindFunc(cast(void**)&SDL_SetWindowMaximumSize, "SDL_SetWindowMaximumSize");
+            bindFunc(cast(void**)&SDL_GetWindowMaximumSize, "SDL_GetWindowMaximumSize");
+            bindFunc(cast(void**)&SDL_SetWindowBordered, "SDL_SetWindowBordered");
             bindFunc(cast(void**)&SDL_ShowWindow, "SDL_ShowWindow");
             bindFunc(cast(void**)&SDL_HideWindow, "SDL_HideWindow");
             bindFunc(cast(void**)&SDL_RaiseWindow, "SDL_RaiseWindow");
@@ -397,6 +439,7 @@ class DerelictSDL2Loader : SharedLibLoader
             bindFunc(cast(void**)&SDL_GL_UnloadLibrary, "SDL_GL_UnloadLibrary");
             bindFunc(cast(void**)&SDL_GL_ExtensionSupported, "SDL_GL_ExtensionSupported");
             bindFunc(cast(void**)&SDL_GL_SetAttribute, "SDL_GL_SetAttribute");
+            bindFunc(cast(void**)&SDL_GL_GetAttribute, "SDL_GL_GetAttribute");
             bindFunc(cast(void**)&SDL_GL_CreateContext, "SDL_GL_CreateContext");
             bindFunc(cast(void**)&SDL_GL_MakeCurrent, "SDL_GL_MakeCurrent");
             bindFunc(cast(void**)&SDL_GL_SetSwapInterval, "SDL_GL_SetSwapInterval");
@@ -424,6 +467,5 @@ shared static this()
 
 shared static ~this()
 {
-    if(SharedLibLoader.isAutoUnloadEnabled())
-        DerelictSDL2.unload();
+    DerelictSDL2.unload();
 }
