@@ -100,14 +100,17 @@ void compileCl4d(string libPath)
 int main(string[] args)
 {
 	// Клиент
-	addCompTarget("client", "../Bin", "FostomClient", BUILD.APP);
+	addCompTarget("client", "../bin", "FostomClient", BUILD.APP);
 	setDependPaths(clientDepends);
 
 	addLibraryFiles("Derelict3", "lib", derelictLibs, ["import"], 
 		(string libPath)
 		{
 			writeln("Building Derelict3 lib...");
-			system("cd "~libPath~`/build && rdmd build.d`);
+			version(Windows)
+				system("cd "~libPath~`/build && dmd build.d && build.exe`);
+			version(linux)
+				system("cd "~libPath~`/build && dmd build.d && ./build`);	
 		});
 
 	addLibraryFiles("cl4d", ".", ["OpenCL","cl4d"], ["."], &compileCl4d);
@@ -121,7 +124,7 @@ int main(string[] args)
 	addCustomFlags("-D -Dd../docs ../docs/candydoc/candy.ddoc ../docs/candydoc/modules.ddoc -version=CL_VERSION_1_1");
 
 	// Сервер
-	addCompTarget("server", "../Bin", "FostomServer", BUILD.APP);
+	addCompTarget("server", "../bin", "FostomServer", BUILD.APP);
 	setDependPaths(serverDepends);
 
 	addSource("../src/server");

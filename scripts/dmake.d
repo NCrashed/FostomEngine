@@ -5,7 +5,7 @@
 
 // Written in the D programming language.
 /**
-*	Version: 1.01
+*	Version: 1.02
 *	License: Boost Version 1.0
 *
 *	This module simplifies crossplatform compilation for multifile projects. Module provides
@@ -118,7 +118,8 @@ enum BUILD
 {
 	APP,
 	LIB,
-	SHARED
+	SHARED,
+	NONE // Compiler call will not be perfomed
 }
 
 enum MODEL
@@ -448,11 +449,13 @@ void addSource(string dir)
 		mCurrTarget.addFlags ~= path.name~" "; 
 	}
 
+	direntries = dirEntries(dir, mode, true);
 	auto list2 = filter!`endsWith(a.name,".di")`(direntries);
 	foreach(path; list2)
 	{
 		mCurrTarget.addFlags ~= path.name~" "; 
 	}
+
 }
 
 /// addSingleFile
@@ -475,6 +478,22 @@ void addSingleFile(string name)
 		return;
 	}
 	mCurrTarget.addFlags ~= name~" ";
+}
+
+/// addCustomCommand
+/**
+*	Adds shell command which will be called before compiling. Usefull with BUILD.NONE to
+*	create cleanup targets for instance.
+*
+*	Example:
+*	----------
+*	setCurrTarget("app");
+*	addCustomCommand((){return "rm -rf *.a *.o";});
+*	----------
+*/
+void addCustomCommand(string function() comm)
+{
+	mCurrTarget.customCommands ~= comm;
 }
 
 /// compileTarget
@@ -521,6 +540,10 @@ private void compileTarget(ref CompilationTarget target)
 				outName = LIB_PREFIX~outName~LIB_EXT;
 				break;
 			}
+			case BUILD.NONE:
+			{
+				break;
+			}
 		}
 
 		if(generateHeaders)
@@ -550,7 +573,19 @@ private void compileTarget(ref CompilationTarget target)
 		if(!exists(outDir))
 			mkdirRecurse(outDir);
 
-		
+		if(customCommands.length > 0)
+		{
+			foreach(func; customCommands)
+				if(system(func()) != 0)
+				{
+					writeln("Custom commands failed. Compilation stopped.");
+					return;
+				}
+		}
+
+		if(type == BUILD.NONE)
+			return;
+
 		if(type!=BUILD.SHARED)
 		{
 			comm ~= "-of"~outDir~"/"~outName~" "~ADDITIONAL_FLAGS~" "~addFlags;
@@ -829,6 +864,7 @@ class CompilationTarget
 	string					docsDir;
 
 	MODEL					buildModel;
+	string function()[]		customCommands;
 
 	this(string pOutName = "", string pOutDir = "", BUILD pType = BUILD.APP)
 	{
@@ -838,6 +874,7 @@ class CompilationTarget
 
 		dependTargets = new CompilationTarget[0];
 		sourcePaths = new string[0];
+		customCommands = new string function()[0];
 
 		version(X86_64)
 			buildModel = MODEL.X86_64;
@@ -888,6 +925,11 @@ class CompilationTarget
 			case BUILD.SHARED:
 			{
 				tempName = LIB_PREFIX~outName~SLIB_EXT;
+				break;
+			}
+			case BUILD.NONE:
+			{
+				tempName = "";
 				break;
 			}
 		}
