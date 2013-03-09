@@ -110,6 +110,7 @@ Milestones
 * Rendering complex octree.
 * Creating GPU cache system.
 * Rendering multiple octrees.
+* Creating polygon to octree convertor.
 
 Screenshots
 ===========
