@@ -146,15 +146,17 @@ class ConeRayTracingRendererProg : CLKernelProgram
 		normalFormat.image_channel_data_type = CL_UNSIGNED_INT8;
 		normalFormat.image_channel_order = CL_RGBA;
 		
-		enum size = StdOctree.BrickSize+2*StdOctree.BorderSize;
+		size_t size = (StdOctree.BrickSize+2*StdOctree.BorderSize)*octree1.brickCount;
 		clBrickData = CLImage3D(mContext, CL_MEM_READ_ONLY, colorFormat, size, size, size, 0, 0, null);
 		clNormData = CLImage3D(mContext, CL_MEM_READ_ONLY, normalFormat, size, size, size, 0, 0, null);
+		clNodeData = CLBuffer(mContext, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, octree1.nodePoolSize, octree1.getNodeTile(0));
+
 		//uint[] data = genLinearData1();
 		//clBrickData = CLImage3D(mContext, CL_MEM_READ_ONLY, format, 4, 4, 4, 0, 0, null);
 		
 		clQ.enqueueWriteImage(clBrickData, CL_TRUE, [0, 0, 0], [size, size, size], octree1.getBrickTile(0,0,0));
 		clQ.enqueueWriteImage(clNormData, CL_TRUE, [0, 0, 0], [size, size, size], octree1.getNormalTile(0,0,0));
-		
+		clQ.enqueueWriteBuffer(clNodeData, CL_TRUE, 0, octree1.nodePoolSize, octree1.getNodeTile(0));
 		clQ.enqueueWriteBuffer(clLightCountBuffer, CL_TRUE, 0, int.sizeof, &lightCount);
 	}
 
@@ -171,7 +173,7 @@ class ConeRayTracingRendererProg : CLKernelProgram
 
 	    // Извлекаем ядро
 	    mMainKernel = mProgram.createKernel(mainKernelName);
-	    mMainKernel.setArgs(inTex, outTex, sampler, screenSize, clMatProjViewInvBuff, clBrickData, clNormData, clLightPosBuffer, clLightColorBuffer, clLightCountBuffer, clDebugOutput);
+		mMainKernel.setArgs(inTex, outTex, sampler, screenSize, clMatProjViewInvBuff, clNodeData, clBrickData, clNormData, clLightPosBuffer, clLightColorBuffer, clLightCountBuffer, clDebugOutput);
 	}
 
 	override void acquireGLObjects()
@@ -209,6 +211,7 @@ class ConeRayTracingRendererProg : CLKernelProgram
 		CLBuffer clLightPosBuffer;
 		CLBuffer clLightColorBuffer;
 		CLBuffer clLightCountBuffer;
+		CLBuffer clNodeData;
 		CLImage3D clBrickData;
 		CLImage3D clNormData;
 		
@@ -520,7 +523,7 @@ private enum coneRayTracingProgSource = q{
 		return norm;
 	}
 	
-	float4 renderBrick(read_only image3d_t brickColor, read_only image3d_t brickNormal, sampler_t smp, __global float* lightsPos, __global float* lightsColor, __global int* lightsCount,
+	float4 renderBrick(read_only image3d_t brickColor, read_only image3d_t brickNormal, uint3 brickOffset, sampler_t smp, __global float* lightsPos, __global float* lightsColor, __global int* lightsCount,
 		float3 rayOrigin, float3 rayDir, float t0, float3 minBox, float3 maxBox)
 	{
 		//=======================
@@ -533,34 +536,35 @@ private enum coneRayTracingProgSource = q{
 		float3 delta;
 		
 		float4 accum = (float4)(0.0f, 0.0f, 0.0f, 1.0f);
-		#define borderSize 1
-		
+		#define BORDER_SIZE 1
+		#define BRICK_SIZE 6
+
 		if(t0 < 0)
 		{
 			t0 = 0;
 		}
 		
 		// finding justOut
-		justOut.x = get_image_width(brickColor)  - borderSize;
-		justOut.y = get_image_height(brickColor) - borderSize;
-		justOut.z = get_image_depth(brickColor)  - borderSize;
+		justOut.x = brickOffset.x + BRICK_SIZE - BORDER_SIZE;
+		justOut.y = brickOffset.y + BRICK_SIZE - BORDER_SIZE;
+		justOut.z = brickOffset.z + BRICK_SIZE - BORDER_SIZE;
 		
 		if(rayDir.x < 0)
-			justOut.x = borderSize-1;
+			justOut.x = brickOffset.x + BORDER_SIZE-1;
 		if(rayDir.y < 0)
-			justOut.y = borderSize-1;
+			justOut.y = brickOffset.y + BORDER_SIZE-1;
 		if(rayDir.z < 0)
-			justOut.z = borderSize-1;
+			justOut.z = brickOffset.z + BORDER_SIZE-1;
 			
 		// finding pos
 		float3 voxelSize = maxBox - minBox;
-		voxelSize.x = voxelSize.x / (get_image_width(brickColor));
-		voxelSize.y = voxelSize.y / (get_image_height(brickColor));
-		voxelSize.z = voxelSize.z / (get_image_depth(brickColor)); 
+		voxelSize.x = voxelSize.x / (BRICK_SIZE - BORDER_SIZE);
+		voxelSize.y = voxelSize.y / (BRICK_SIZE - BORDER_SIZE);
+		voxelSize.z = voxelSize.z / (BRICK_SIZE - BORDER_SIZE); 
 		float3 rayPos = (rayOrigin + t0*rayDir)-minBox; 
-		pos.x = (int)(rayPos.x / voxelSize.x);
-		pos.y = (int)(rayPos.y / voxelSize.y);
-		pos.z = (int)(rayPos.z / voxelSize.z);
+		pos.x = brickOffset.x + (int)(rayPos.x / voxelSize.x);
+		pos.y = brickOffset.y + (int)(rayPos.y / voxelSize.y);
+		pos.z = brickOffset.z + (int)(rayPos.z / voxelSize.z);
 		
 		
 		// finding step
@@ -654,17 +658,25 @@ private enum coneRayTracingProgSource = q{
 		
 		return accum;
 	}
-	
+
+	float4 renderOctree(__global uint* nodePool, read_only image3d_t brickPool, read_only image3d_t brickNormalPool, sampler_t smp, 
+	                   __global float* lightsPos, __global float* lightsColor, __global int* lightsCount,
+	                   float3 rayOrigin, float3 rayDir, float t0, float3 minBox, float3 maxBox)
+	{
+		return renderBrick(brickPool, brickNormalPool, (uint3)(0,0,0), smp, lightsPos, lightsColor, lightsCount, rayOrigin, rayDir, t0, minBox, maxBox);
+	}
+
     /**
     *   Отрисовывает один кирпич. 
     */
     __kernel void renderKernel(read_only image2d_t texture, write_only image2d_t output, sampler_t smp, __global const uint* screenSize,
-    	__global float* matProjViewInv, read_only image3d_t brick, read_only image3d_t normalBrick, __global float* lightsPos, __global float* lightsColor, __global int* lightsCount, 
+	    __global float* matProjViewInv, __global uint* nodePool, read_only image3d_t brickPool, read_only image3d_t normalBrickPool, 
+	    __global float* lightsPos, __global float* lightsColor, __global int* lightsCount, 
     	__global write_only float* debugOutput)
     {
         const int idx = get_global_id(0);
         const int idy = get_global_id(1);
-
+		
         if (idx < screenSize[0] && idy < screenSize[1])
         {
         	float3 rayDir, rayOrigin;
@@ -682,8 +694,9 @@ private enum coneRayTracingProgSource = q{
         	
         	if(boxIntersect(rayDir, rayOrigin, minBox, maxBox, &t0, &t1) && t1 > 0)
         	{
-        		color = renderBrick(brick, normalBrick, smp, lightsPos, lightsColor, lightsCount, rayOrigin, rayDir, t0, minBox, maxBox);
-        		
+        		//color = renderBrick(brick, normalBrick, smp, lightsPos, lightsColor, lightsCount, rayOrigin, rayDir, t0, minBox, maxBox);
+				color = renderOctree(nodePool, brickPool, normalBrickPool, smp, lightsPos, lightsColor, lightsCount, rayOrigin, rayDir, t0, minBox, maxBox);
+
 				if(color.w < 0.99f)
 				{
 					color.x = color.x + bgcolor.x;

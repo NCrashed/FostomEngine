@@ -117,7 +117,36 @@ class Octree(size_t brickSize, size_t borderSize = 1, size_t brickPoolSide = 48)
 	{
 		return cast(void*)(cast(size_t)normalPool.memory + mapBrickToLinear(x,y,z));
 	}
-	
+
+	/**
+	 *	Returns particular octree node memory location.
+	 */
+	void* getNodeTile(size_t n)
+	{
+		return cast(void*)childPool.memory + nodeTileSize*n;
+	}
+
+	size_t brickCount() @property
+	{
+		return brickPool.pageCount;
+	}
+
+	/**
+	 * 	Returns node pool size in bytes.
+	 */
+	size_t nodePoolSize() @property
+	{
+		return nodeTileSize*childPool.pageCount;
+	}
+
+	/**
+	 *	Returns tile node size in bytes.
+	 */
+	static size_t nodeTileSize() @property
+	{
+		return 16*uint.sizeof;
+	}
+
 	private
 	{
 		struct DataRegion

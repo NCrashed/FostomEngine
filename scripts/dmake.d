@@ -501,11 +501,11 @@ void addCustomCommand(string function() comm)
 *	Sends to compilation target with name $(D target). This function doesn't consider compilation dependencies, see
 *	$(D proceedCmd). If function cannot find target, exception occured.
 */
-void compileTarget(string target)
+int compileTarget(string target)
 {
 	if( target in mTargets)
 	{
-		compileTarget(mTargets[target]);
+		return compileTarget(mTargets[target]);
 	} else
 		throw new Exception("Target "~target~" isn't registered!");
 }
@@ -514,10 +514,11 @@ void compileTarget(string target)
 /**
 *	Inner implemetation of $(D compileTarget(string target)).
 */
-private void compileTarget(ref CompilationTarget target)
+private int compileTarget(ref CompilationTarget target)
 {
 	string comm = "dmd ";
 	string sharedLib, oldname;
+	int res;
 	with(target)
 	{
 		final switch(type)
@@ -579,28 +580,30 @@ private void compileTarget(ref CompilationTarget target)
 				if(system(func()) != 0)
 				{
 					writeln("Custom commands failed. Compilation stopped.");
-					return;
+					return 1;
 				}
 		}
 
 		if(type == BUILD.NONE)
-			return;
+			return 0;
 
 		if(type!=BUILD.SHARED)
 		{
 			comm ~= "-of"~outDir~"/"~outName~" "~ADDITIONAL_FLAGS~" "~addFlags;
 			version(Windows)
 				comm = replace(comm, "/", "\\");
-			system(comm);
+			res = system(comm);
 		} else
 		{
 			comm ~= "-od"~outDir~" -of"~outDir~"/"~sharedLib~" "~ADDITIONAL_FLAGS~" "~addFlags;
 			version(linux)
 			{
 				comm ~= "-lib -c -fPIC ";
-				system(comm);
+				res = system(comm);
+				if(res != 0) return res;
+
 				comm = "ld -shared -o "~outDir~"/"~sharedLib~" "~outDir~"/"~outName~" -lrt -lphobos2 -lpthread";
-				system(comm);
+				res = system(comm);
 			}
 			version(Windows)
 			{
@@ -615,7 +618,7 @@ private void compileTarget(ref CompilationTarget target)
 				}
 
 				comm ~= "-L/IMPLIB "~defName~" ";
-				system(comm);
+				res = system(comm);
 				// moving import library
 
 				string importLib = outDir~"\\"~LIB_PREFIX~oldname~LIB_EXT;
@@ -626,6 +629,7 @@ private void compileTarget(ref CompilationTarget target)
 		}
 
 	}
+	return res;
 }
 
 /// proceedCmd
@@ -684,6 +688,7 @@ int proceedCmd(string[] args)
 				foreach(tar; mTargets)
 					tar.debugMode = true;
 
+	int res;
 	if(args[1]!="all")
 	{
 		auto target = mTargets[args[1]];
@@ -692,11 +697,18 @@ int proceedCmd(string[] args)
 			writeln("Compiling "~args[1]~" dependencies...");
 			foreach(dep;getSortedTargets(target.dependTargets))
 				if( !exists(dep.finalname) )
-					compileTarget(dep);
+				{
+					int tres = compileTarget(dep);
+					if(tres != 0)
+						res = tres;
+				}
 		}
 		writeln("Compiling "~args[1]~"...");
-		compileTarget(mTargets[args[1]]);
-		writeln("Finished.");
+		int tres = compileTarget(mTargets[args[1]]);
+		if(tres != 0)
+			res = tres;
+		else
+			writeln("Finished.");
 	}
 	else
 	{
@@ -705,11 +717,14 @@ int proceedCmd(string[] args)
 		foreach(ntar; ntars)
 		{
 			writeln("Compiling "~ntar.name~"...");
-			compileTarget(ntar.tar);
-			writeln("Finished.");
+			int tres = compileTarget(ntar.tar);
+			if(tres != 0)
+				res = tres;
+			else
+				writeln("Finished.");
 		}
 	}
-	return 0;
+	return res;
 }
 
 

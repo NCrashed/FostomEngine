@@ -22,6 +22,7 @@ class PagePool(size_t pageSize)
 	this(size_t pageCount)
 	{
 		memoryPool = malloc(pageCount * pageSize);
+		mPageCount = pageCount;
 	}
 	
 	this(size_t pageCount, void* memory)
@@ -40,9 +41,20 @@ class PagePool(size_t pageSize)
 	{
 		return memoryPool;
 	}
-	
+
+	size_t pageCount() @property
+	{
+		return mPageCount;
+	}
+
+	size_t memorySize() @property
+	{
+		return mPageCount*pageSize;
+	}
+
 	private
 	{
 		private void* memoryPool = null;
+		size_t mPageCount;
 	}
 }
