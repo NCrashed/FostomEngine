@@ -65,7 +65,7 @@ struct ColorRGBA
 	{
 		uint rv, gv, bv;
 		float mv = 0;
-		import std.stdio;
+
 		for(size_t x = x1; x < x2; x++)
 			for(size_t y = y1; y < y2; y++)
 				for(size_t z = z1; z < z2; z++)
@@ -86,7 +86,6 @@ struct ColorRGBA
 			r = cast(ubyte) (rv / mv);
 			g = cast(ubyte) (gv / mv);
 			b = cast(ubyte) (bv / mv);
-			writeln(rv, " ", gv, " ", bv, "/", mv);
 		}
 	}
 	

@@ -55,6 +55,34 @@ debug
 	{
 		system("pause");
 	}
+
+	void debugTile(StdOctree.NodeTile[] tiles)
+	{
+		void debugTexel(StdOctree.NodeTile.NodeTexel tex)
+		{
+			write("texel( ", tex.leaf, " ", tex.constant, " ");
+			if(tex.constant)
+			{
+				writeln(tex.extractColor(), ")");
+			} else
+			{
+				writeln(tex.extractAddress(), " ", tex.extractBlockCoord(), " )");
+			}
+		}
+
+		foreach(i, ref tile; tiles)
+		{
+			writeln(i, " tile: ");
+			debugTexel(tile.t0);
+			debugTexel(tile.t1);
+			debugTexel(tile.t2);
+			debugTexel(tile.t3);
+			debugTexel(tile.t4);
+			debugTexel(tile.t5);
+			debugTexel(tile.t6);
+			debugTexel(tile.t7);
+		}
+	}
 }
 
 alias Octree!(4,1,48) StdOctree;
@@ -99,12 +127,14 @@ class Octree(size_t brickSize, size_t borderSize = 1, size_t brickPoolSide = 48)
 		recurseDescend(data, normal, tileApp, brickApp, normApp);
 
 		childPool = new PagePool!(NodeTile.sizeof)(tileApp.data.length, tileApp.data.ptr);
+		debugTile(tileApp.data);
 
 		size_t brickCount = brickApp.data.length/BrickVolume;
 		auto preparedBrickData = prepareBricks(brickApp.data, brickCount, mBrickPoolSize);
 		auto preparedBrickNormalData = prepareBricks(normApp.data, brickCount, mBrickPoolSize);
 		brickPool = new CBuffer(preparedBrickData.length*uint.sizeof, preparedBrickData.ptr);
 		normalPool = new CBuffer(preparedBrickNormalData.length*uint.sizeof, preparedBrickNormalData.ptr);
+
 
 		/*
 		mBrickPoolSize = clampBrickPoolSize(brickApp.data.length/BrickVolume);
@@ -407,6 +437,7 @@ class Octree(size_t brickSize, size_t borderSize = 1, size_t brickPoolSide = 48)
 			incBrickPos(lastBrickPos);
 			
 			bool isLeaf = false;
+			dbg(region);
 			if(region.sizex <= brickSize || region.sizey <= brickSize || region.sizez <= brickSize)
 			{
 				isLeaf = true;
@@ -455,7 +486,8 @@ class Octree(size_t brickSize, size_t borderSize = 1, size_t brickPoolSide = 48)
 			SList!StackElement stack;
 			stack.insert(StackElement(DataRegion(data), NodeTile(), rootTile, 0));
 			int lastTilePos = 0;
-			
+			bool rootException = true;
+
 			while(!stack.empty)
 			{
 				StackElement element = stack.front();
@@ -489,26 +521,20 @@ class Octree(size_t brickSize, size_t borderSize = 1, size_t brickPoolSide = 48)
 				element.tile.t5 = traverseTile(data, normal, t5reg, brickApp, normApp, lastBrickPos);
 				element.tile.t6 = traverseTile(data, normal, t6reg, brickApp, normApp, lastBrickPos);
 				element.tile.t7 = traverseTile(data, normal, t7reg, brickApp, normApp, lastBrickPos);
-				
-				
-				if(!element.tile.t0.leaf)
-					stack.insert(StackElement(t0reg, NodeTile(), element.tile, 0));
-				if(!element.tile.t1.leaf)	
+
+				stack.insert(StackElement(t0reg, NodeTile(), element.tile, 0));
+				if(!rootException)
+				{
 					stack.insert(StackElement(t1reg, NodeTile(), element.tile, 1));
-				if(!element.tile.t2.leaf)
 					stack.insert(StackElement(t2reg, NodeTile(), element.tile, 2));
-				if(!element.tile.t3.leaf)
 					stack.insert(StackElement(t3reg, NodeTile(), element.tile, 3));
-				
-				if(!element.tile.t4.leaf)
+		
 					stack.insert(StackElement(t4reg, NodeTile(), element.tile, 4));
-				if(!element.tile.t5.leaf)
 					stack.insert(StackElement(t5reg, NodeTile(), element.tile, 5));
-				if(!element.tile.t6.leaf)
 					stack.insert(StackElement(t6reg, NodeTile(), element.tile, 6));
-				if(!element.tile.t7.leaf)
 					stack.insert(StackElement(t7reg, NodeTile(), element.tile, 7));
-					
+				} else rootException = false;
+
 				element.parent.getTexelPointer(element.parentTexel).setAddress(lastTilePos+1);	
 				tileApp.put(element.parent);
 				lastTilePos++;
@@ -687,7 +713,17 @@ class Octree(size_t brickSize, size_t borderSize = 1, size_t brickPoolSide = 48)
 					address = address & 0xC0000000;
 					address += value & 0x3FFFFFFF;
 				}
-				
+
+				ColorRGBA extractColor()
+				{
+					return ColorRGBA(color);
+				}
+
+				vec3st extractBlockCoord()
+				{
+					return vec3st(cast(size_t)((color >> 20) & 0x3FF), cast(size_t)((color >> 10) & 0x3FF), cast(size_t)((color) & 0x3FF));
+				}
+
 				bool leaf() @property
 				{
 					return ((address >> 31) & 0x01) == 1;
@@ -697,6 +733,12 @@ class Octree(size_t brickSize, size_t borderSize = 1, size_t brickPoolSide = 48)
 				{
 					return ((address >> 30) & 0x01) == 1;
 				}
+
+				uint extractAddress()
+				{
+			        return address & 0x3FFFFFFF;
+				}
+			        				
 			}
 			NodeTexel t0, t1, t2, t3, t4, t5, t6, t7;
 			
@@ -806,7 +848,7 @@ version(unittest)
 		return ret;
 	}
 }
-unittest
+/*unittest
 {
 	import std.stdio;
 	import std.math;
@@ -827,4 +869,4 @@ unittest
 	uint[][][] data = genTestColorData1();
 	uint[][][] norm = genTestNormalData1();
 	StdOctree octree1 = new StdOctree(data, norm);
-}
+}*/

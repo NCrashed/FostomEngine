@@ -146,30 +146,18 @@ class ConeRayTracingRendererProg : CLKernelProgram
 		normalFormat.image_channel_data_type = CL_UNSIGNED_INT8;
 		normalFormat.image_channel_order = CL_RGBA;
 
-		import std.stdio;
-		writeln(octree1.brickCount);
 		vec3st size = octree1.brickPoolSize;
-		writeln(size);
-
 		clBrickData = CLImage3D(mContext, CL_MEM_READ_ONLY, colorFormat, size.x, size.y, size.z, 0, 0, null);
 		clNormData = CLImage3D(mContext, CL_MEM_READ_ONLY, normalFormat, size.x, size.y, size.z, 0, 0, null);
-		writeln("!");
-		writeln(octree1.nodePoolSize);
 		clNodeData = CLBuffer(mContext, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, octree1.nodePoolSize, octree1.getNodeTile(0));
-		writeln("!!");
-		//uint[] data = genLinearData1();
-		//clBrickData = CLImage3D(mContext, CL_MEM_READ_ONLY, format, 4, 4, 4, 0, 0, null);
 
 		writeln(octree1.brickPoolMemSize, " != ", size.x*size.y*size.z*uint.sizeof);
 		assert(octree1.brickCount*216 == size.x*size.y*size.z);
 		assert(octree1.brickPoolMemSize == size.x*size.y*size.z*uint.sizeof);
 		clQ.enqueueWriteImage(clBrickData, CL_TRUE, [0, 0, 0], size.m, octree1.getBrickTile(0,0,0));
-		writeln("!!!");
 		clQ.enqueueWriteImage(clNormData, CL_TRUE, [0, 0, 0], size.m, octree1.getNormalTile(0,0,0));
-		writeln("!");
 		clQ.enqueueWriteBuffer(clNodeData, CL_TRUE, 0, octree1.nodePoolSize, octree1.getNodeTile(0));
 		clQ.enqueueWriteBuffer(clLightCountBuffer, CL_TRUE, 0, int.sizeof, &lightCount);
-		writeln("!!");
 	}
 
 	/**
@@ -555,11 +543,6 @@ private enum coneRayTracingProgSource = q{
 		float4 accum = (float4)(0.0f, 0.0f, 0.0f, 1.0f);
 		#define BORDER_SIZE 1
 		#define BRICK_SIZE 6
-
-		if(t0 < 0)
-		{
-			t0 = 0;
-		}
 		
 		// finding justOut
 		justOut.x = brickOffset.x + BRICK_SIZE - BORDER_SIZE;
@@ -676,11 +659,154 @@ private enum coneRayTracingProgSource = q{
 		return accum;
 	}
 
+	bool isNodeLeaf(uint val)
+	{
+		return (val >> 31 & 0x01) == 1;
+	}
+
+	bool isNodeConstant(uint val)
+	{
+		return ((val >> 30) & 0x01) == 1;
+	}
+
+	uint3 getBrickAddress(uint val)
+	{
+		return (uint3)((val >> 20) & 0x3FF, (val >> 10) & 0x3FF, val & 0x3FF);
+	}
+
+	float4 getBrickConstantColor(uint val)
+	{
+		return (float4)(val & 0x000000FF, (val & 0x0000FF00) >> 8, (val & 0x00FF0000) >> 16, (val & 0xFF000000) >> 24);
+	}
+
+	uint getNextTileAddress(uint val)
+	{
+		return val & 0x3FFFFFFF;
+	}
+
 	float4 renderOctree(__global uint* nodePool, read_only image3d_t brickPool, read_only image3d_t brickNormalPool, sampler_t smp, 
 	                   __global float* lightsPos, __global float* lightsColor, __global int* lightsCount,
-	                   float3 rayOrigin, float3 rayDir, float t0, float3 minBox, float3 maxBox)
+	                   float3 rayOrigin, float3 rayDir, float t0, float3 minBox, float3 maxBox,
+						__global write_only float* debugOutput)
 	{
-		return renderBrick(brickPool, brickNormalPool, (uint3)(0,0,0), smp, lightsPos, lightsColor, lightsCount, rayOrigin, rayDir, t0, minBox, maxBox);
+		uint address = *nodePool;
+		uint color = *(nodePool+1);
+
+		if(isNodeLeaf(address))
+		{
+			return renderBrick(brickPool, brickNormalPool, getBrickAddress(color), smp, 
+				lightsPos, lightsColor, lightsCount, rayOrigin, rayDir, t0, minBox, maxBox);
+		}
+
+		if(isNodeConstant(address))
+		{
+			return getBrickConstantColor(color);
+		}
+
+		address = getNextTileAddress(address);
+		float3 currMinBox = minBox;
+		float3 currMaxBox = maxBox;
+
+		float3 rayPos = (rayOrigin + t0*rayDir)-currMinBox; 
+		rayPos.x = rayPos.x / (currMaxBox.x - currMinBox.x);
+		rayPos.y = rayPos.y / (currMaxBox.y - currMinBox.y);
+		rayPos.z = rayPos.z / (currMaxBox.z - currMinBox.z);
+
+		float4 accum = (float4)(0.0f, 0.0f, 0.0f, 1.0f);
+		bool stop = false;
+		while(!stop)
+		{
+			uint3 off = (uint3)((uint)(2*rayPos.x), (uint)(2*rayPos.y), (uint)(2*rayPos.z));
+			if(off.x == 2) off.x = 1;
+			if(off.y == 2) off.y = 1;
+			if(off.z == 2) off.z = 1;
+
+			debugOutput[0] = off.x;
+			debugOutput[1] = off.y;
+			debugOutput[2] = off.z;
+			debugOutput[3] = address;
+
+			__global uint* currentTile = nodePool+address*16;
+			__global uint* currentNode = currentTile + (off.x + 2*off.y + 4*off.z)*2;
+
+			if(off.x == 0)
+			{
+				currMaxBox.x -= (currMaxBox.x-currMinBox.x)/2;
+			} else
+			{
+				currMinBox.x += (currMaxBox.x-currMinBox.x)/2;
+			}
+			if(off.y == 0)
+			{
+				currMaxBox.y -= (currMaxBox.y-currMinBox.y)/2;
+			} else
+			{
+				currMinBox.y += (currMaxBox.y-currMinBox.y)/2;
+			}
+			if(off.z == 0)
+			{
+				currMaxBox.z -= (currMaxBox.z-currMinBox.z)/2;
+			} else
+			{
+				currMinBox.z += (currMaxBox.z-currMinBox.z)/2;
+			}
+
+			address = *currentNode;
+			color = *(currentNode+1);
+
+			/*debugOutput[0] = getBrickAddress(color).x;
+			debugOutput[1] = getBrickAddress(color).y;
+			debugOutput[2] = getBrickAddress(color).z;
+			debugOutput[3] = isNodeLeaf(address);*/
+
+			float t1;
+			if(isNodeLeaf(address))
+			{
+	        	if(boxIntersect(rayDir, rayOrigin, currMinBox, currMaxBox, &t0, &t1) && t1 > 0)
+	        	{
+					if(t0 < 0)
+					{
+						t0 = 0;
+					}
+					float4 tempColor = renderBrick(brickPool, brickNormalPool, getBrickAddress(color), smp, 
+						lightsPos, lightsColor, lightsCount, rayOrigin, rayDir, t0, currMinBox, currMaxBox);
+
+        			accum.x = accum.x + tempColor.x*tempColor.w;
+        			accum.y = accum.y + tempColor.y*tempColor.w;
+        			accum.z = accum.z + tempColor.z*tempColor.w;
+        			accum.w = accum.w*(1 - tempColor.w);
+					if(accum.w < 0.01f)
+					{
+						accum.w = 1 - accum.w;
+						return accum;
+					}
+
+					float3 nextPos = (rayOrigin + t1*rayDir)-currMinBox; 
+					uint3 noff = (uint3)((uint)(2*nextPos.x), (uint)(2*nextPos.y), (uint)(2*nextPos.z));
+					if(noff.x == 2) noff.x = 1;
+					if(noff.y == 2) noff.y = 1;
+					if(noff.z == 2) noff.z = 1;
+
+					if(noff.x == off.x && noff.y == off.y && noff.z == off.z)
+					{
+						accum.w = 1 - accum.w;
+						return accum;
+					}
+
+					t0 = t1;
+					currMinBox = minBox;
+					currMaxBox = maxBox;
+					rayPos = nextPos;
+					address = *nodePool;
+				}
+				stop = true; // STOPED THERE
+			}
+
+			rayPos = 2*rayPos - (float3)((uint)(2*rayPos.x), (uint)(2*rayPos.y), (uint)(2*rayPos.z));
+		}
+
+		accum.w = 1 - accum.w;
+		return accum;
 	}
 
     /**
@@ -711,8 +837,14 @@ private enum coneRayTracingProgSource = q{
         	
         	if(boxIntersect(rayDir, rayOrigin, minBox, maxBox, &t0, &t1) && t1 > 0)
         	{
+				if(t0 < 0)
+				{
+					t0 = 0;
+				}
+
         		//color = renderBrick(brick, normalBrick, smp, lightsPos, lightsColor, lightsCount, rayOrigin, rayDir, t0, minBox, maxBox);
-				color = renderOctree(nodePool, brickPool, normalBrickPool, smp, lightsPos, lightsColor, lightsCount, rayOrigin, rayDir, t0, minBox, maxBox);
+				color = renderOctree(nodePool, brickPool, normalBrickPool, smp, lightsPos, lightsColor, 
+					lightsCount, rayOrigin, rayDir, t0, minBox, maxBox, debugOutput);
 
 				if(color.w < 0.99f)
 				{
