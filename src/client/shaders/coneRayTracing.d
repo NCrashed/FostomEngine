@@ -145,19 +145,31 @@ class ConeRayTracingRendererProg : CLKernelProgram
 		cl_image_format normalFormat;
 		normalFormat.image_channel_data_type = CL_UNSIGNED_INT8;
 		normalFormat.image_channel_order = CL_RGBA;
-		
-		size_t size = (StdOctree.BrickSize+2*StdOctree.BorderSize)*octree1.brickCount;
-		clBrickData = CLImage3D(mContext, CL_MEM_READ_ONLY, colorFormat, size, size, size, 0, 0, null);
-		clNormData = CLImage3D(mContext, CL_MEM_READ_ONLY, normalFormat, size, size, size, 0, 0, null);
-		clNodeData = CLBuffer(mContext, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, octree1.nodePoolSize, octree1.getNodeTile(0));
 
+		import std.stdio;
+		writeln(octree1.brickCount);
+		vec3st size = octree1.brickPoolSize;
+		writeln(size);
+
+		clBrickData = CLImage3D(mContext, CL_MEM_READ_ONLY, colorFormat, size.x, size.y, size.z, 0, 0, null);
+		clNormData = CLImage3D(mContext, CL_MEM_READ_ONLY, normalFormat, size.x, size.y, size.z, 0, 0, null);
+		writeln("!");
+		writeln(octree1.nodePoolSize);
+		clNodeData = CLBuffer(mContext, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, octree1.nodePoolSize, octree1.getNodeTile(0));
+		writeln("!!");
 		//uint[] data = genLinearData1();
 		//clBrickData = CLImage3D(mContext, CL_MEM_READ_ONLY, format, 4, 4, 4, 0, 0, null);
-		
-		clQ.enqueueWriteImage(clBrickData, CL_TRUE, [0, 0, 0], [size, size, size], octree1.getBrickTile(0,0,0));
-		clQ.enqueueWriteImage(clNormData, CL_TRUE, [0, 0, 0], [size, size, size], octree1.getNormalTile(0,0,0));
+
+		writeln(octree1.brickPoolMemSize, " != ", size.x*size.y*size.z*uint.sizeof);
+		assert(octree1.brickCount*216 == size.x*size.y*size.z);
+		assert(octree1.brickPoolMemSize == size.x*size.y*size.z*uint.sizeof);
+		clQ.enqueueWriteImage(clBrickData, CL_TRUE, [0, 0, 0], size.m, octree1.getBrickTile(0,0,0));
+		writeln("!!!");
+		clQ.enqueueWriteImage(clNormData, CL_TRUE, [0, 0, 0], size.m, octree1.getNormalTile(0,0,0));
+		writeln("!");
 		clQ.enqueueWriteBuffer(clNodeData, CL_TRUE, 0, octree1.nodePoolSize, octree1.getNodeTile(0));
 		clQ.enqueueWriteBuffer(clLightCountBuffer, CL_TRUE, 0, int.sizeof, &lightCount);
+		writeln("!!");
 	}
 
 	/**
@@ -236,7 +248,7 @@ class ConeRayTracingRendererProg : CLKernelProgram
 		
 		uint[][][] genTestData1()
 		{
-			enum size = 4;
+			enum size = 8;
 			uint[][][] data = genSizedArray(size, size, size);
 			
 			data[1][1][1] = ColorRGBA.fastCompact(0, 150, 0, 255);
@@ -249,7 +261,12 @@ class ConeRayTracingRendererProg : CLKernelProgram
 			data[0][3][0] = ColorRGBA.fastCompact(0, 30, 150, 255);
 			data[1][3][0] = ColorRGBA.fastCompact(0, 30, 150, 255);
 			data[0][2][0] = ColorRGBA.fastCompact(0, 30, 150, 255);
-			
+
+			data[4][0][0] = ColorRGBA.fastCompact(0, 30, 150, 255);
+			data[4][1][0] = ColorRGBA.fastCompact(0, 30, 150, 255);
+			data[4][2][0] = ColorRGBA.fastCompact(0, 30, 150, 255);
+			data[7][7][7] = ColorRGBA.fastCompact(150, 0, 0, 255);
+
 			/*data[0][3][0] = ColorRGBA.fastCompact(150, 0, 0, 255);
 			data[1][2][0] = ColorRGBA.fastCompact(150, 0, 0, 255);
 			data[1][3][0] = ColorRGBA.fastCompact(150, 0, 0, 255);
@@ -265,7 +282,7 @@ class ConeRayTracingRendererProg : CLKernelProgram
 		
 		uint[][][] genTestNormalData1()
 		{
-			enum size = 4;
+			enum size = 8;
 			uint[][][] data = genSizedArray(size, size, size);
 			
 			foreach(ref mass1; data)

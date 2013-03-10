@@ -77,7 +77,7 @@ public
         writingScreenSize();
         mRenderProg.projMatrix = projMatrix;
         mRenderProg.viewMatrix = viewMatrix;
-        mRenderProg.lightPosition = vec3(cos(angle)*dist, 0, sin(angle)*dist);
+        mRenderProg.lightPosition = vec3(cos(angle)*dist, 2, sin(angle)*dist);
         mRenderProg.printDebugInfo();
         
         mMainProgram.acquireGLObjects();

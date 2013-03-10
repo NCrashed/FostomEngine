@@ -63,24 +63,31 @@ struct ColorRGBA
 
 	this(uint[][][] values, size_t x1, size_t x2, size_t y1, size_t y2, size_t z1, size_t z2)
 	{
-		uint rv, gv, bv, av;
-		
+		uint rv, gv, bv;
+		float mv = 0;
+		import std.stdio;
 		for(size_t x = x1; x < x2; x++)
 			for(size_t y = y1; y < y2; y++)
 				for(size_t z = z1; z < z2; z++)
 				{
 					int v = values[x][y][z];
-					rv += v & 0x000000FF;
-					gv += (v & 0x0000FF00) >> 8;
-					bv += (v & 0x00FF0000) >> 16;
-					av += (v & 0xFF000000) >> 24;
+					ubyte av = (v & 0xFF000000) >> 24;
+					float at = av/255.0f;
+					a = cast(ubyte)fmax(a, av);
+					
+					rv += (v & 0x000000FF)*at;
+					gv += ((v & 0x0000FF00) >> 8)*at;
+					bv += ((v & 0x00FF0000) >> 16)*at;
+					mv += at;
 				}
 
-		size_t length = (x2-x1)*(y2-y1)*(z2-z1);	
-		r = cast(ubyte) (rv / length);
-		g = cast(ubyte) (gv / length);
-		b = cast(ubyte) (bv / length);
-		a = cast(ubyte) (av / length);
+		if(mv != 0.0f)
+		{
+			r = cast(ubyte) (rv / mv);
+			g = cast(ubyte) (gv / mv);
+			b = cast(ubyte) (bv / mv);
+			writeln(rv, " ", gv, " ", bv, "/", mv);
+		}
 	}
 	
 	int compact() @property

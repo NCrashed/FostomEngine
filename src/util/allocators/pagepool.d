@@ -13,6 +13,8 @@ module util.allocators.pagepool;
 import std.c.stdlib;
 import std.c.string;
 
+alias PagePool!1 CBuffer;
+
 /**
 *	Class wrapper around memory pool of $(B pageSize) memory blocks. Provides
 *	interface for reallocating and relative pointer access.

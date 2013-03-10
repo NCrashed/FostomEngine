@@ -64,8 +64,9 @@ class Octree(size_t brickSize, size_t borderSize = 1, size_t brickPoolSide = 48)
 	enum BrickSize = brickSize;
 	enum BorderSize = borderSize;
 	enum BrickPoolSide = brickPoolSide;
-	
-	enum BrickVolume = (brickSize+2*borderSize)*(brickSize+2*borderSize)*(brickSize+2*borderSize);
+	protected enum brickMemSize = (brickSize+2*borderSize)*(brickSize+2*borderSize)*(brickSize+2*borderSize)*int.sizeof;
+	enum BrickFullSide = brickSize+2*borderSize;
+	enum BrickVolume = BrickFullSide*BrickFullSide*BrickFullSide;
 	
 	this(uint[][][] data, uint[][][] normal)
 	{
@@ -96,10 +97,20 @@ class Octree(size_t brickSize, size_t borderSize = 1, size_t brickPoolSide = 48)
 		auto normApp = Appender!(uint[], uint)();
 		
 		recurseDescend(data, normal, tileApp, brickApp, normApp);
-		
+
 		childPool = new PagePool!(NodeTile.sizeof)(tileApp.data.length, tileApp.data.ptr);
-		brickPool = new PagePool!(brickMemSize)(brickApp.data.length/BrickVolume, brickApp.data.ptr);
-		normalPool = new PagePool!(brickMemSize)(normApp.data.length/BrickVolume, normApp.data.ptr);
+
+		size_t brickCount = brickApp.data.length/BrickVolume;
+		auto preparedBrickData = prepareBricks(brickApp.data, brickCount, mBrickPoolSize);
+		auto preparedBrickNormalData = prepareBricks(normApp.data, brickCount, mBrickPoolSize);
+		brickPool = new CBuffer(preparedBrickData.length*uint.sizeof, preparedBrickData.ptr);
+		normalPool = new CBuffer(preparedBrickNormalData.length*uint.sizeof, preparedBrickNormalData.ptr);
+
+		/*
+		mBrickPoolSize = clampBrickPoolSize(brickApp.data.length/BrickVolume);
+		size_t brickPoolLength = mapBrickToLinear(mBrickPoolSize.x, mBrickPoolSize.y, mBrickPoolSize.z);
+		brickPool = new PagePool!(brickMemSize)(brickPoolLength, brickApp.data.ptr);
+		normalPool = new PagePool!(brickMemSize)(brickPoolLength, normApp.data.ptr);*/
 	}
 	
 	/**
@@ -126,9 +137,22 @@ class Octree(size_t brickSize, size_t borderSize = 1, size_t brickPoolSide = 48)
 		return cast(void*)childPool.memory + nodeTileSize*n;
 	}
 
+	/**
+	 *	Returns actual size in pixels of brick pool.
+	 */ 
+	vec3st brickPoolSize() @property
+	{
+		return mBrickPoolSize;
+	}
+
+	size_t brickPoolMemSize() @property
+	{
+		return brickPool.memorySize();
+	}
+
 	size_t brickCount() @property
 	{
-		return brickPool.pageCount;
+		return brickPool.pageCount/(BrickVolume*uint.sizeof);
 	}
 
 	/**
@@ -144,7 +168,8 @@ class Octree(size_t brickSize, size_t borderSize = 1, size_t brickPoolSide = 48)
 	 */
 	static size_t nodeTileSize() @property
 	{
-		return 16*uint.sizeof;
+		static assert(NodeTile.sizeof == 16*uint.sizeof);
+		return NodeTile.sizeof;
 	}
 
 	private
@@ -195,7 +220,7 @@ class Octree(size_t brickSize, size_t borderSize = 1, size_t brickPoolSide = 48)
 		/**
 		*	Allows to get access to brick tile at (x,y,z).
 		*/
-		size_t mapBrickToLinear(size_t x, size_t y, size_t z)
+		static size_t mapBrickToLinear(size_t x, size_t y, size_t z)
 		{
 			if(x >= brickPoolSide || y >= brickPoolSide || z >= brickPoolSide)
 			{
@@ -203,7 +228,45 @@ class Octree(size_t brickSize, size_t borderSize = 1, size_t brickPoolSide = 48)
 			}
 			return x + brickPoolSide*BrickVolume*y + brickPoolSide*brickPoolSide*BrickVolume*z;
 		}
-		
+
+		/**
+		 *	Calculates brick coordinates from index.
+		 */ 
+		static vec3st mapBrickFromLinear(size_t n)
+		{
+			vec3st ret;
+			ret.x = n % (brickPoolSide*BrickVolume);
+			n /= brickPoolSide*BrickVolume;
+			ret.y = n % (brickPoolSide);
+			ret.z = n / brickPoolSide;
+			return ret;
+		}
+		unittest
+		{
+			static assert(1 % (brickPoolSide*BrickVolume) == 1);
+			assert(StdOctree.mapBrickFromLinear(mapBrickToLinear(0,0,0)) == vec3st(0,0,0));
+			assert(StdOctree.mapBrickFromLinear(mapBrickToLinear(1,0,0)) == vec3st(1,0,0));
+			assert(StdOctree.mapBrickFromLinear(mapBrickToLinear(0,1,0)) == vec3st(0,1,0));
+			assert(StdOctree.mapBrickFromLinear(mapBrickToLinear(0,0,1)) == vec3st(0,0,1));
+			assert(StdOctree.mapBrickFromLinear(mapBrickToLinear(1,1,1)) == vec3st(1,1,1));
+			assert(StdOctree.mapBrickFromLinear(mapBrickToLinear(23,42,15)) == vec3st(23,42,15));
+		}
+
+		/**
+		 * Clamps brick texture sizes to pass them to OpenCL buffer
+		 */
+		vec3st clampBrickPoolSize(size_t n)
+		{
+			auto vec = mapBrickFromLinear(n);
+			vec.x = brickPoolSide*BrickVolume;
+			if(vec.y > 0)
+				vec.y = brickPoolSide*BrickVolume;
+			else
+				vec.y = 1;
+			vec.z = vec.z + 1;
+			return vec;
+		}
+
 		/**
 		*	Increases $(B pos) value with evenly filling the brick pool along vector (1,1,1).
 		*/
@@ -225,7 +288,63 @@ class Octree(size_t brickSize, size_t borderSize = 1, size_t brickPoolSide = 48)
 				}
 			}
 		}
-		
+
+		/**
+		 *	Raw generated bricks has wrong order in memory, this functions maps 1D array of 3D bricks
+		 *	to 3D array. $(B maxSize) fills with size of texture in pixels.
+		 */ 
+		uint[] prepareBricks(uint[] rawBricks, size_t brickCount, out vec3st maxSize)
+		{
+			size_t maxX = brickPoolSide;
+			size_t maxY = brickPoolSide;
+			size_t maxZ = brickCount / (brickPoolSide*brickPoolSide) + 1;
+
+			maxSize.x = maxX*BrickFullSide;
+			maxSize.y = maxY*BrickFullSide;
+			maxSize.z = maxZ*BrickFullSide;
+			auto ret = new uint[maxX*maxY*maxZ*BrickVolume];
+
+			void copyBrickToTexture(ref uint[] tex, ref uint[] brick, size_t sx, size_t sy, size_t sz)
+			{
+				size_t mapTexCoord(size_t x, size_t y, size_t z)
+				{
+					return x + y*maxSize.x + z*maxSize.x*maxSize.y;
+				}
+
+				size_t mapBrickCoord(size_t x, size_t y, size_t z)
+				{
+					return x + y*BrickFullSide + z*BrickFullSide*BrickFullSide;
+				}
+
+				for(size_t z = 0; z < BrickFullSide; z++)
+				{
+					for(size_t y = 0; y < BrickFullSide; y++)
+					{
+						for(size_t x = 0; x < BrickFullSide; x++)
+						{
+							tex[mapTexCoord(sx+x, sy+y, sz+z)] = brick[mapBrickCoord(x,y,z)];
+						}
+					}
+				}
+			}
+
+			size_t rawBrickIndex = 0;
+			mainloop: for(size_t z = 0; z < maxZ; z++)
+			{
+				for(size_t y = 0; y<maxY; y++)
+				{
+					for(size_t x = 0; x<maxX; x++)
+					{
+						copyBrickToTexture(ret, rawBricks[rawBrickIndex*BrickVolume .. (rawBrickIndex+1)*BrickVolume], x*BrickFullSide, y*BrickFullSide, z*BrickFullSide);
+						rawBrickIndex+=1;
+						if(rawBrickIndex >= brickCount) break mainloop;
+					}
+				}
+			}
+
+			return ret;
+		}
+
 		/**
 		*	Generates mip-brick for $(B data) and adds to $(B brickApp) generated brick. Does not fill
 		*	address of next octree node address.
@@ -473,11 +592,11 @@ class Octree(size_t brickSize, size_t borderSize = 1, size_t brickPoolSide = 48)
 	protected
 	{
 		int rootNode = 0;
-		enum brickMemSize = (brickSize+2*borderSize)*(brickSize+2*borderSize)*(brickSize+2*borderSize)*int.sizeof;
 		PagePool!(NodeTile.sizeof) 		childPool;
-		PagePool!(brickMemSize) 		brickPool;
-		PagePool!(brickMemSize) 		normalPool;
-		
+		CBuffer 						brickPool;
+		CBuffer 						normalPool;
+		vec3st	mBrickPoolSize;
+
 		/**
 		*	Memory block/page for storing node child info.
 		*
