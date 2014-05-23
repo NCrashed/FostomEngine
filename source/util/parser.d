@@ -1,14 +1,9 @@
-//          Copyright Gushcha Anton 2012.
-// Distributed under the Boost Software License, Version 1.0.
-//    (See accompanying file LICENSE_1_0.txt or copy at
-//          http://www.boost.org/LICENSE_1_0.txt)
-/// Парсер формата gendoc
+// written in the D programming language
 /**
-*	@file parser.d Парсер для древовидного формата данных gendoc. Может читать также формат json и формат моделей mdl для WarcraftIII.
-*	Используется как главный формат хранения материалов.
-*/
-// Written in the D programming language
-/**
+*   Copyright: © 2012-2014 Anton Gushcha
+*   License: Subject to the terms of the GPL-3.0 license, as written in the included LICENSE file.
+*   Authors: Anton Gushcha <ncrashed@gmail.com>
+*
 *	Module provides support for 'General Document' (etc gendoc) format. It is human-readable format for tree structure serialization. It's look like
 *	JSON and YAML, due some lucky occasions parser can read JSON format and WarIII model format, althrough in read-only mode. Some examples below:
 *

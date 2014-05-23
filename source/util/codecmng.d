@@ -1,10 +1,12 @@
-//          Copyright Gushcha Anton 2012.
-// Distributed under the Boost Software License, Version 1.0.
-//    (See accompanying file LICENSE_1_0.txt or copy at
-//          http://www.boost.org/LICENSE_1_0.txt)
-/// Менджер управляет набором доступных кодеков, регистрирует, исключает кодеки.
+// written in the D programming language
 /**
-*	@file codecmng.d Менджер управляет набором доступных кодеков, регистрирует, исключает кодеки.
+*   Copyright: © 2012-2014 Anton Gushcha
+*   License: Subject to the terms of the GPL-3.0 license, as written in the included LICENSE file.
+*   Authors: Anton Gushcha <ncrashed@gmail.com>
+*
+*   Менджер управляет набором доступных кодеков, регистрирует, исключает кодеки.
+*
+*	Менджер управляет набором доступных кодеков, регистрирует, исключает кодеки.
 *	Ищет подходящий кодек по расширению или ключевому слову.
 */
 module util.codecmng;

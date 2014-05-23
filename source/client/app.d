@@ -1,6 +1,12 @@
-/// Клиентское основное приложение
+// written in the D programming language
 /**
-*	@file client/app.d Приложение доступно отовсюду, используя getSingleton. Здесь реализован бесконечный
+*   Copyright: © 2013-2014 Anton Gushcha
+*   License: Subject to the terms of the GPL-3.0 license, as written in the included LICENSE file.
+*   Authors: Anton Gushcha <ncrashed@gmail.com>
+*
+*	Клиентское основное приложение.
+*
+*   Приложение доступно отовсюду, используя getSingleton. Здесь реализован бесконечный
 *	цикл отрисовки и проверки событий, также здесь будет вызываться обработка физики.
 */
 module client.app;

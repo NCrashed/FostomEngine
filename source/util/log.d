@@ -1,10 +1,12 @@
-//          Copyright Gushcha Anton 2012.
-// Distributed under the Boost Software License, Version 1.0.
-//    (See accompanying file LICENSE_1_0.txt or copy at
-//          http://www.boost.org/LICENSE_1_0.txt)
-/// Модуль для безопасного ведения логов
+// written in the D programming language
 /**
-*	@file log.d Модуль безопасного ведения логов. Позволяет вести несколько логов одновременно, записывать
+*   Copyright: © 2012-2014 Anton Gushcha
+*   License: Subject to the terms of the GPL-3.0 license, as written in the included LICENSE file.
+*   Authors: Anton Gushcha <ncrashed@gmail.com>
+*
+*   Модуль для безопасного ведения логов.
+*
+*	Модуль безопасного ведения логов. Позволяет вести несколько логов одновременно, записывать
 *	сообщения разных уровней важности. Если запись в лог фейлит, приложение целиком остается цело.
 */
 module util.log;

@@ -1,10 +1,12 @@
-//          Copyright Gushcha Anton 2012.
-// Distributed under the Boost Software License, Version 1.0.
-//    (See accompanying file LICENSE_1_0.txt or copy at
-//          http://www.boost.org/LICENSE_1_0.txt)
-/// Абстракное хранилище ресурсов
+// written in the D programming language
 /**
-*	@file archive.d Интерфейс для реализации унифицированной работы с разными
+*   Copyright: © 2012-2014 Anton Gushcha
+*   License: Subject to the terms of the GPL-3.0 license, as written in the included LICENSE file.
+*   Authors: Anton Gushcha <ncrashed@gmail.com>
+*
+*   Абстракное хранилище ресурсов
+*
+*	Интерфейс для реализации унифицированной работы с разными
 *	архивами, в том числе и с файловой системой.
 */
 module util.resources.archive;

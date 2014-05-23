@@ -1,10 +1,12 @@
-﻿//          Copyright Gushcha Anton 2012.
-// Distributed under the Boost Software License, Version 1.0.
-//    (See accompanying file LICENSE_1_0.txt or copy at
-//          http://www.boost.org/LICENSE_1_0.txt)
-/// Описание векторов для размерностей 2,3,4
+﻿// written in the D programming language
 /**
-*	@file vector.d Описание векторов. Для каждой размерности свой класс, кардинально различаются
+*   Copyright: © 2012-2014 Anton Gushcha
+*   License: Subject to the terms of the GPL-3.0 license, as written in the included LICENSE file.
+*   Authors: Anton Gushcha <ncrashed@gmail.com>
+*
+*   Описание векторов для размерностей 2,3,4
+*
+*	Описание векторов. Для каждой размерности свой класс, кардинально различаются
 *	только 4х мерные векторы, так как 2х мерные вектора являются упрощенными 3х мерными. Заданы
 *	методы для трансформации одного типа вектора в другой.
 */

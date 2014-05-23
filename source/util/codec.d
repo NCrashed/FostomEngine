@@ -1,9 +1,10 @@
-//          Copyright Gushcha Anton 2012.
-// Distributed under the Boost Software License, Version 1.0.
-//    (See accompanying file LICENSE_1_0.txt or copy at
-//          http://www.boost.org/LICENSE_1_0.txt)
+// written in the D programming language
 /**
-*	@file codec.d Описание интерфейса для кодирования/декодирования данных.
+*   Copyright: © 2012-2014 Anton Gushcha
+*   License: Subject to the terms of the GPL-3.0 license, as written in the included LICENSE file.
+*   Authors: Anton Gushcha <ncrashed@gmail.com>
+*
+*	Описание интерфейса для кодирования/декодирования данных.
 *	Используется для подключения различных форматов ресурсов к движку, кодирования
 *	данных и пр. Каждая реализация кодека регистрирует себя в менджере, через который
 *	пользователи могут получить доступ к кодекам.

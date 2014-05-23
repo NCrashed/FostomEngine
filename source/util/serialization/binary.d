@@ -1,9 +1,9 @@
-//          Copyright Gushcha Anton 2012.
-// Distributed under the Boost Software License, Version 1.0.
-//    (See accompanying file LICENSE_1_0.txt or copy at
-//          http://www.boost.org/LICENSE_1_0.txt)
-// Written in the D programming language
+// written in the D programming language
 /**
+*   Copyright: © 2012-2014 Anton Gushcha
+*   License: Subject to the terms of the GPL-3.0 license, as written in the included LICENSE file.
+*   Authors: Anton Gushcha <ncrashed@gmail.com>
+*
 *	Modules provides backend sealization for simple binary representation. It used at net transfer protocol for messages.
 *
 *	See_Also: 

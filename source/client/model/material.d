@@ -1,10 +1,12 @@
-//          Copyright Gushcha Anton 2012.
-// Distributed under the Boost Software License, Version 1.0.
-//    (See accompanying file LICENSE_1_0.txt or copy at
-//          http://www.boost.org/LICENSE_1_0.txt)
-/// Описание материала меша
+// written in the D programming language
 /**
-*	@file material.d Описывает материал меша, все необходимые его свойства. Текстуры, используемые шейдеры и пр.
+*   Copyright: © 2013-2014 Anton Gushcha
+*   License: Subject to the terms of the GPL-3.0 license, as written in the included LICENSE file.
+*   Authors: Anton Gushcha <ncrashed@gmail.com>
+*
+*   Описание материала меша
+*
+*	Описывает материал меша, все необходимые его свойства. Текстуры, используемые шейдеры и пр.
 */
 module client.model.material;
 

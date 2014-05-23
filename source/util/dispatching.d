@@ -1,12 +1,8 @@
-//          Copyright Gushcha Anton 2012.
-// Distributed under the Boost Software License, Version 1.0.
-//    (See accompanying file LICENSE_1_0.txt or copy at
-//          http://www.boost.org/LICENSE_1_0.txt)
-// Written in the D programming language.
+// written in the D programming language
 /**
-*	Version: 1.1
-*	License: Boost 1.0
-*	Authors: Gushcha Anton (NCrashed)
+*   Copyright: © 2012-2014 Anton Gushcha
+*   License: Subject to the terms of the GPL-3.0 license, as written in the included LICENSE file.
+*   Authors: Anton Gushcha <ncrashed@gmail.com>
 *
 *	This module provides multiply dispatch support, also called multimethods. With $(D dispatch) you 
 *	can choose function overload during runtime with minimal cost.

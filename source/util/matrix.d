@@ -1,10 +1,12 @@
-//          Copyright Gushcha Anton 2012.
-// Distributed under the Boost Software License, Version 1.0.
-//    (See accompanying file LICENSE_1_0.txt or copy at
-//          http://www.boost.org/LICENSE_1_0.txt)
-/// Реализует квадратные матрицы
+// written in the D programming language
 /**
-*	@file matrix.d Реализация квадратных матриц. Используется как посредник между OpenGL матрицами (просто массивы)
+*   Copyright: © 2012-2014 Anton Gushcha
+*   License: Subject to the terms of the GPL-3.0 license, as written in the included LICENSE file.
+*   Authors: Anton Gushcha <ncrashed@gmail.com>
+*
+*   Реализует квадратные матрицы
+*
+*	Реализация квадратных матриц. Используется как посредник между OpenGL матрицами (просто массивы)
 *	и системой рендеринга.
 *	@todo Добавить методы для вычисления обратной матрицы
 *	@todo Добавить юниттестов
