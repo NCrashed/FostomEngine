@@ -45,7 +45,7 @@ void listen()
 		{
 			sn = listener.accept();
 		}
-		catch (SocketAcceptException e) {};
+		catch (SocketAcceptException e) {}
 		
 		connections ~= spawn(&readingThread, thisTid, cast (shared Socket) sn);
 		
@@ -110,7 +110,7 @@ void readingThread(Tid owner, shared Socket sn)
 			{
 				sock.close();
 			}
-			catch (Exception e) {};
+			catch (Exception e) {}
 			return;
 		}
 			

@@ -352,13 +352,23 @@ sizediff_t countUntilEscaped(string s, string what)
 	for(sizediff_t i = 0; i<s.length-what.length+1; i++)
 	{
 		if(s[i..i+what.length] == what)
-			if(i == 0) 
+		{
+			if(i == 0)
+			{ 
 				return 0;
+			}
 			else
+			{
 				if(s[i-1] == '\\')
+				{
 					continue;
+				}
 				else
+				{
 					return i;
+				}
+			}
+		}
 	}
 	return -1;
 }
