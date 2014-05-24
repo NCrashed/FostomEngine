@@ -257,7 +257,7 @@ private:
 	int mWidth, mHeight;
 }
 
-private extern(C) uint readProc(void *buffer, uint size, uint count, fi_handle handle) nothrow
+private extern(System) uint readProc(void *buffer, uint size, uint count, fi_handle handle) nothrow
 {
 	try
 	{
@@ -277,7 +277,7 @@ private extern(C) uint readProc(void *buffer, uint size, uint count, fi_handle h
 	return 0;
 }
 
-private extern(C) uint writeProc(void *buffer, uint size, uint count, fi_handle handle) nothrow
+private extern(System) uint writeProc(void *buffer, uint size, uint count, fi_handle handle) nothrow
 {
 	try
 	{
@@ -291,7 +291,7 @@ private extern(C) uint writeProc(void *buffer, uint size, uint count, fi_handle 
 	return 0;
 }
 
-private extern(C) int seekProc(fi_handle handle, long offset, int origin) nothrow
+private extern(System) int seekProc(fi_handle handle, ptrdiff_t offset, int origin) nothrow
 {
 	try
 	{
@@ -305,12 +305,12 @@ private extern(C) int seekProc(fi_handle handle, long offset, int origin) nothro
 	return 0;
 }
 
-private extern(C) long tellProc(fi_handle handle) nothrow
+private extern(System) ptrdiff_t tellProc(fi_handle handle) nothrow
 { 
 	try
 	{
 		Stream file = cast(Stream)handle;
-		return file.position();
+		return cast(ptrdiff_t)file.position();
 	} 
 	catch(Exception e)
 	{
