@@ -69,7 +69,7 @@ abstract class ClientWorld
 	*	@par absx Абсолютное положение мышки по оси X.
 	*	@par absy Абсолютное положение мышки по оси Y.
 	*/
-	void mousePosEvent(int dx, int dy, int absx, int absy);
+	void mousePosEvent(double dx, double dy, double absx, double absy);
 
 	/**
 	*	При нажатии на клавишу $(B key) вызывается эта функция.

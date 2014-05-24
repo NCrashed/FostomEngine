@@ -64,7 +64,7 @@ enum RENDER_LOG = "RenderLog.log";
 enum SHADERS_GROUP = "General";
 enum STD_SCENE_MANAGER = "client.stdscenemanager.StdSceneManager";
 
-private extern(C) void glfw3ErrorCallback(int error, const(char)* description)
+private extern(C) void glfw3ErrorCallback(int error, const(char)* description) nothrow
 {
     writeLog(fromStringz(description), LOG_ERROR_LEVEL.NOTICE, RENDER_LOG);
 }
@@ -360,9 +360,9 @@ class RenderSystem
     }
 
     /// Получение окна приложения
-    @property GLFWwindow window()
+    @property GLFWwindow* window()
     {
-        return *mWindow;
+        return mWindow;
     }
 
     /// Returns pointer to window
@@ -655,7 +655,7 @@ private:
 
         // Загружаем окно
         //glfwWindowHint(GLFW_DEPTH_BITS, grConf.depthBits); TODO: Fix depthBits crashed
-        glfwWindowHint(GLFW_FSAA_SAMPLES, 4);
+        glfwWindowHint(GLFW_SAMPLES, 4);
 
         GLFWmonitor* mMonitor = null;
         if(!grConf.windowed) mMonitor = glfwGetPrimaryMonitor();

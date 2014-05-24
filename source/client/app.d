@@ -106,7 +106,8 @@ class App
 			// Reading messages from other threads
 			auto gotMessage = receiveTimeout(
 				dur!"nsecs"(1),
-				&proceedEvent );
+				&proceedEventInt,
+				&proceedEventDouble );
    		}
 	}
 
@@ -165,8 +166,8 @@ private:
 	RenderSystem rendersys;
 
 	/// Старые позиции мышки
-	static int oldposx;
-	static int oldposy;
+	static double oldposx;
+	static double oldposy;
 
 	// FPS counter
 	debug
@@ -178,7 +179,7 @@ private:
 	/// Главный поток программы
 	static extern(C) __gshared Tid mainThread;
 
-	void proceedEvent(string msg, int p1, int p2)
+	void proceedEventInt(string msg, int p1, int p2)
 	{
 		if (msg == "resize")
 		{
@@ -186,9 +187,6 @@ private:
 			newConf.screenX = p1;
 			newConf.screenY = p2;
 			rendersys.graphicConfigs = newConf;
-		} else if (msg == "mpos")
-		{
-			mousePosEvent(p1, p2);
 		} else if (msg == "press")
 		{
 			keyPressed(p1);
@@ -198,6 +196,14 @@ private:
 		}
 	}
 
+	void proceedEventDouble(string msg, double p1, double p2)
+	{
+	    if (msg == "mpos")
+        {
+            mousePosEvent(p1, p2);
+        }
+	}
+	
 	/// Загрузка начальной сцены
 	void initScene()
 	{
@@ -208,7 +214,7 @@ private:
 		glfwSetCursorPosCallback(rendersys.windowPtr, &mouseUpdate );
 		glfwSetKeyCallback(rendersys.windowPtr, &charUpdate);
 
-		glfwSetInputMode(rendersys.windowPtr, GLFW_CURSOR_MODE, GLFW_CURSOR_CAPTURED);
+		glfwSetInputMode(rendersys.windowPtr, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
 		// Создание камеры
 		mCamera = new Camera;  
@@ -241,10 +247,10 @@ private:
 	}
 
 	/// Обновление позиции мышки
-	void mousePosEvent(int xpos, int ypos)
+	void mousePosEvent(double xpos, double ypos)
 	{
-		int dx = xpos-oldposx;
-		int dy = ypos-oldposy;
+		double dx = xpos-oldposx;
+		double dy = ypos-oldposy;
 
 		mCurrWorld.mousePosEvent(dx, dy, xpos, ypos);
 
@@ -269,8 +275,9 @@ private:
 	/**
 	*	Вызывается сама через GLFW3
 	*/
-	extern(C) static void mouseUpdate(GLFWwindow* window, int xpos, int ypos)
+	extern(C) static void mouseUpdate(GLFWwindow* window, double xpos, double ypos) nothrow
 	{
+	    scope(failure) {}
 		mainThread.send("mpos",xpos,ypos);
 	}
 
@@ -278,8 +285,9 @@ private:
 	/**
 	*	Вызывается сама через GLFW3
 	*/
-	extern(C) static void reshape(GLFWwindow* window, int w, int h )
+	extern(C) static void reshape(GLFWwindow* window, int w, int h ) nothrow
 	{
+	    scope(failure) {}
 		mainThread.send("resize",w,h);
 	}
 
@@ -287,8 +295,9 @@ private:
 	/**
 	*	Вызывается сама через GLFW3
 	*/
-	extern(C) static void charUpdate(GLFWwindow* window,  int key, int action)
+	extern(C) static void charUpdate(GLFWwindow* window,  int key, int action, int, int) nothrow
 	{
+	    scope(failure) {}
 		if(action == GLFW_PRESS)
 		{
 			mainThread.send("press",key,0);

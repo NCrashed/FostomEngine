@@ -257,7 +257,7 @@ private:
 	int mWidth, mHeight;
 }
 
-private extern(Windows) uint readProc(void *buffer, uint size, uint count, fi_handle handle) nothrow
+private extern(C) uint readProc(void *buffer, uint size, uint count, fi_handle handle) nothrow
 {
 	try
 	{
@@ -277,7 +277,7 @@ private extern(Windows) uint readProc(void *buffer, uint size, uint count, fi_ha
 	return 0;
 }
 
-private extern(Windows) uint writeProc(void *buffer, uint size, uint count, fi_handle handle) nothrow
+private extern(C) uint writeProc(void *buffer, uint size, uint count, fi_handle handle) nothrow
 {
 	try
 	{
@@ -291,7 +291,7 @@ private extern(Windows) uint writeProc(void *buffer, uint size, uint count, fi_h
 	return 0;
 }
 
-private extern(Windows) int seekProc(fi_handle handle, int offset, int origin) nothrow
+private extern(C) int seekProc(fi_handle handle, long offset, int origin) nothrow
 {
 	try
 	{
@@ -305,18 +305,17 @@ private extern(Windows) int seekProc(fi_handle handle, int offset, int origin) n
 	return 0;
 }
 
-private extern(Windows) int tellProc(fi_handle handle) nothrow
+private extern(C) long tellProc(fi_handle handle) nothrow
 { 
 	try
 	{
 		Stream file = cast(Stream)handle;
-		return cast(int)file.position();
+		return file.position();
 	} 
 	catch(Exception e)
 	{
 		return 1;
 	}
-	return 0;
 }
 
 /// Фабрика ресурсов

@@ -126,7 +126,7 @@ class MainWorld : ClientWorld
 	*	@par absx Абсолютное положение мышки по оси X.
 	*	@par absy Абсолютное положение мышки по оси Y.
 	*/
-	override void mousePosEvent(int dx, int dy, int absx, int absy)
+	override void mousePosEvent(double dx, double dy, double absx, double absy)
 	{
 		enum RESTRICTED_ANGLE = 0.01;
 
@@ -157,10 +157,10 @@ class MainWorld : ClientWorld
 			mCamMode = !mCamMode;
 			if(!mCamMode)
 			{
-				glfwSetInputMode(rendersys.windowPtr, GLFW_CURSOR_MODE, GLFW_CURSOR_NORMAL);
+				glfwSetInputMode(rendersys.windowPtr, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 			} else
 			{
-				glfwSetInputMode(rendersys.windowPtr, GLFW_CURSOR_MODE, GLFW_CURSOR_CAPTURED);
+				glfwSetInputMode(rendersys.windowPtr, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 			}
 		} else if (key == GLFW_KEY_PAUSE)
 		{

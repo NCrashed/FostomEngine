@@ -29,7 +29,7 @@ module client.graphconf;
 
 public import util.conf;
 
-import derelict.glfw3.types;
+import derelict.glfw3.glfw3;
 
 enum GRAPH_CONF = "graphics";
 

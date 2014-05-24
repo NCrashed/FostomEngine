@@ -707,13 +707,10 @@ class KdTree(MaterialIdType, ushort plainPrecision = 0, ulong chunkSize = 256)
 			{
 				case PLAIN_DIR.X_AXIS:
 					return PLAIN_DIR.Y_AXIS;
-					break;
 				case PLAIN_DIR.Y_AXIS:
 					return PLAIN_DIR.Z_AXIS;
-					break;
 				case PLAIN_DIR.Z_AXIS:
 					return PLAIN_DIR.X_AXIS;
-					break;
 			}
 		}
 		

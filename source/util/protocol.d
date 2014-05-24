@@ -215,7 +215,7 @@ mixin template ProtocolPool(IndexType, SerializerBackend, pairs...)
 		{
 			static if(tpairs.length > 0)
 			{
-				enum GenerateSwitchBody = "case("~to!string(tpairs[0])~"): return cast(PMessage)(func!(SerializerBackend, "~tpairs[1].stringof~")(args)); break; \n" ~
+				enum GenerateSwitchBody = "case("~to!string(tpairs[0])~"): return cast(PMessage)(func!(SerializerBackend, "~tpairs[1].stringof~")(args)); \n" ~
 					GenerateSwitchBody!(tpairs[2..$]);
 			} 
 			else

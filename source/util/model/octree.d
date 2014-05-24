@@ -348,7 +348,7 @@ class Octree(size_t brickSize, size_t borderSize = 1, size_t brickPoolSide = 48)
 			maxSize.z = maxZ*BrickFullSide;
 			auto ret = new uint[maxX*maxY*maxZ*BrickVolume];
 
-			void copyBrickToTexture(ref uint[] tex, ref uint[] brick, size_t sx, size_t sy, size_t sz)
+			void copyBrickToTexture(uint[] tex, uint[] brick, size_t sx, size_t sy, size_t sz)
 			{
 				size_t mapTexCoord(size_t x, size_t y, size_t z)
 				{
@@ -411,9 +411,9 @@ class Octree(size_t brickSize, size_t borderSize = 1, size_t brickPoolSide = 48)
 			}
 						
 			// generating brick
-			int stepX = region.sizex / brickSize;
-			int stepY = region.sizey / brickSize;
-			int stepZ = region.sizez / brickSize;
+			size_t stepX = region.sizex / brickSize;
+			size_t stepY = region.sizey / brickSize;
+			size_t stepZ = region.sizez / brickSize;
 			
 			if(stepX == 0) stepX = 1;
 			if(stepY == 0) stepY = 1;

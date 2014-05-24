@@ -1,0 +1,24 @@
+{
+	"name": "fostom-engine",
+	"description": "A try to build voxel based 3D engine",
+	"copyright": "Copyright © 2013-2014, Anton Gushcha",
+	"authors": ["Anton Gushcha (NCrashed <ncrashed@gmail.com>)"
+	           ,"Shamyan Roman (Zaramzan <shamyan.roman@gmail.com>)"],
+	"license": "GPL-3.0",
+	"sourcePaths": ["source/util"],
+	"configurations": [
+	   {
+	       "name": "client",
+	       "targetType": "executable",
+	       "targetPath": "bin",
+	       "targetName": "fostom-client",
+	       "sourcePaths": ["source/client"],
+           "dependencies": {
+               "derelict-gl3": "~master",
+               "derelict-glfw3": "~master",
+               "derelict-fi": "~master",
+               "cl4d": "~master"
+           }
+	   }
+	]
+}

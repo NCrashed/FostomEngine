@@ -268,7 +268,6 @@ private
 	            if (!silent) writeln("Framebuffer incomplete, missing read buffer");
 	            return false;
 	        default:
-	            assert(0);
 	            return false;
 	    }
 	    return true;
