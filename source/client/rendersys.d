@@ -605,7 +605,7 @@ private:
     {
         writeLog("Initing shaders...", LOG_ERROR_LEVEL.NOTICE, RENDER_LOG);
         // Create and compile our GLSL program from the shaders
-        programID = LoadShaders( "../Media/Shaders/VertexShader.glsl", "../Media/Shaders/FragmentShader.glsl" );
+        programID = LoadShaders( "../media/shaders/VertexShader.glsl", "../media/shaders/FragmentShader.glsl" );
 
         MatrixID = glGetUniformLocation(programID, "MVP");
         ModelMtrxID = glGetUniformLocation(programID, "M");
@@ -616,7 +616,7 @@ private:
         // Get a handle for our "myTextureSampler" uniform
         TextureID  = glGetUniformLocation(programID, "myTextureSampler");
 
-        quadProgram = LoadShaders("../Media/Shaders/QuadVertexShader.glsl", "../Media/Shaders/QuadFragmentShader.glsl");
+        quadProgram = LoadShaders("../media/shaders/QuadVertexShader.glsl", "../media/shaders/QuadFragmentShader.glsl");
         quadTextureID  = glGetUniformLocation(programID, "myTextureSampler");
     }
 
