@@ -215,9 +215,9 @@ private:
 		st.resGroups[0].entries = new LoadedResGroup.ResGroupEntry[5];
 		st.resGroups[0].entries[0].path = "../media";
 		st.resGroups[0].entries[0].type = "FileSystem";
-		st.resGroups[0].entries[1].path = "../media/mextures";
+		st.resGroups[0].entries[1].path = "../media/textures";
 		st.resGroups[0].entries[1].type = "FileSystem";
-		st.resGroups[0].entries[2].path = "../media/mhaders";
+		st.resGroups[0].entries[2].path = "../media/shaders";
 		st.resGroups[0].entries[2].type = "FileSystem";
 		st.resGroups[0].entries[3].path = "../media/models";
 		st.resGroups[0].entries[3].type = "FileSystem";
@@ -226,7 +226,7 @@ private:
 
 		st.resGroups[1].name = "Terrain";
 		st.resGroups[1].entries = new LoadedResGroup.ResGroupEntry[1];
-		st.resGroups[1].entries[0].path = "../media/merrain";
+		st.resGroups[1].entries[0].path = "../media/terrain";
 		st.resGroups[1].entries[0].type = "FileSystem";
 		
 		st.resGroups[2].name = "Images";

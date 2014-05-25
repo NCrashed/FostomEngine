@@ -145,7 +145,7 @@ class ResourceGroup
 				fullname = arch.name~"/"~name;
 				return arch.openFile(name, FileMode.In);
 			}
-		throw new Exception("File "~name~" doesn't belong to gorup "~mName);		
+		throw new Exception("File "~name~" doesn't belong to group "~mName);		
 	}
 
 	/// Проверка, присутствует ли файл в группе
