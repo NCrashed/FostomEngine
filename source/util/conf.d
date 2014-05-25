@@ -79,6 +79,7 @@ bool writeConf(ConfStruct)(string confName, ConfStruct confStruct) nothrow
 	{
 		auto stream = serialize!GendocArchive(confStruct);
 		auto f = new std.stream.File(CONFIGS_PATHS~confName~CONFIG_EXT, FileMode.Out);
+		scope(exit) f.close();
 		f.copyFrom(stream);
 	}
 	catch(Exception e)

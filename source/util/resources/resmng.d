@@ -213,25 +213,25 @@ private:
 		st.resGroups = new LoadedResGroup[3];
 		st.resGroups[0].name = "General";
 		st.resGroups[0].entries = new LoadedResGroup.ResGroupEntry[5];
-		st.resGroups[0].entries[0].path = "../Media";
+		st.resGroups[0].entries[0].path = "../media";
 		st.resGroups[0].entries[0].type = "FileSystem";
-		st.resGroups[0].entries[1].path = "../Media/Textures";
+		st.resGroups[0].entries[1].path = "../media/mextures";
 		st.resGroups[0].entries[1].type = "FileSystem";
-		st.resGroups[0].entries[2].path = "../Media/Shaders";
+		st.resGroups[0].entries[2].path = "../media/mhaders";
 		st.resGroups[0].entries[2].type = "FileSystem";
-		st.resGroups[0].entries[3].path = "../Media/Models";
+		st.resGroups[0].entries[3].path = "../media/models";
 		st.resGroups[0].entries[3].type = "FileSystem";
-		st.resGroups[0].entries[4].path = "../Media/Textures/Materials";
+		st.resGroups[0].entries[4].path = "../media/textures/materials";
 		st.resGroups[0].entries[4].type = "FileSystem";
 
 		st.resGroups[1].name = "Terrain";
 		st.resGroups[1].entries = new LoadedResGroup.ResGroupEntry[1];
-		st.resGroups[1].entries[0].path = "../Media/Terrain";
+		st.resGroups[1].entries[0].path = "../media/merrain";
 		st.resGroups[1].entries[0].type = "FileSystem";
 		
 		st.resGroups[2].name = "Images";
 		st.resGroups[2].entries = new LoadedResGroup.ResGroupEntry[1];
-		st.resGroups[2].entries[0].path = "../Media/Images";
+		st.resGroups[2].entries[0].path = "../media/images";
 		st.resGroups[2].entries[0].type = "FileSystem";
 
 		writeConf(filename, st);
