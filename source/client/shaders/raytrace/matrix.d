@@ -24,6 +24,7 @@
 */
 module client.shaders.raytrace.matrix;
 
+import client.shaders.dsl;
 import opencl.all;
 import util.matrix;
 
@@ -81,14 +82,14 @@ struct GPUMatrix(size_t size)
     private CLBuffer buffer;
 }
 
-private enum sources = q{
+alias MatrixKernels = Kernel!("Matrix", q{
     /// Alias для инкапсуляции
     #define Matrix4x4 __global float*
     
     /**
-    *   Умножение вектора на матрицу
+    *   Multiply 4x4 matrix by float4 vector
     */
-    float4 multiply(Matrix4x4 m, float4 b)
+    float4 m44MultiplyByVec(Matrix4x4 m, float4 b)
     {
         float4 ret;
         ret.x = m[0]*b.x+m[4]*b.y+m[8]*b.z+m[12]*b.w;
@@ -97,4 +98,4 @@ private enum sources = q{
         ret.w = m[3]*b.x+m[7]*b.y+m[11]*b.z+m[15]*b.w;
         return ret;
     }
-};
+});
