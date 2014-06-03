@@ -35,6 +35,11 @@ import util.model.octree;
 import util.color;
 import std.stdio;
 
+import client.shaders.dsl;
+import client.shaders.raytrace.matrix;
+import client.shaders.raytrace.common;
+import client.shaders.doutput;
+
 debug
 {
     import std.stdio;
@@ -88,9 +93,7 @@ class TestRendererProg : CLKernelProgram
     {
         mContext = clContex;
         gpuMatProjViewInv = GPUMatrix4x4(clContex);
-
-        clDebugOutput = CLBuffer(clContex, CL_MEM_WRITE_ONLY | CL_MEM_COPY_HOST_PTR, mDebugOutput.length*float.sizeof,
-            mDebugOutput.ptr);
+        gpuDebugOutput = GPUDebugOutput!(4, float)(clContex);
     }
 
     /**
@@ -128,7 +131,7 @@ class TestRendererProg : CLKernelProgram
     */
     void printDebugInfo()
     {
-        writeln(mDebugOutput);
+        writeln(tempBuffer);
     }
 
     /**
@@ -144,7 +147,7 @@ class TestRendererProg : CLKernelProgram
 
         // Извлекаем ядро
         mMainKernel = mProgram.createKernel(mainKernelName);
-        mMainKernel.setArgs(inTex, outTex, sampler, screenSize.buffer, gpuMatProjViewInv.buffer, clDebugOutput);
+        mMainKernel.setArgs(inTex, outTex, sampler, screenSize.buffer, gpuMatProjViewInv.buffer, gpuDebugOutput.buffer);
     }
 
     override void acquireGLObjects()
@@ -163,9 +166,7 @@ class TestRendererProg : CLKernelProgram
     override void updateCustomBuffers()
     {
         gpuMatProjViewInv.write(CQ, matProjViewInv);
-
-        CQ.enqueueReadBuffer(clDebugOutput, CL_FALSE, 0, mDebugOutput.length*float.sizeof,
-            mDebugOutput.ptr);
+        tempBuffer = gpuDebugOutput.read(CQ);
     }
 
     private
@@ -174,16 +175,11 @@ class TestRendererProg : CLKernelProgram
         Matrix!4 matProj = Matrix!(4).identity;
         Matrix!4 matProjViewInv = Matrix!(4).identity;
         
-        CLBuffer clDebugOutput;
-        float[4] mDebugOutput;
-        
+        GPUDebugOutput!(4, float).BufferType tempBuffer;
+        GPUDebugOutput!(4, float) gpuDebugOutput;
         GPUMatrix4x4 gpuMatProjViewInv;
     }
 }
-
-import client.shaders.dsl;
-import client.shaders.raytrace.matrix;
-import client.shaders.raytrace.common;
 
 /// Исходники кернела
 private alias testKernel = Kernel!(MatrixKernels, CommonKernels, "testKernel", q{
