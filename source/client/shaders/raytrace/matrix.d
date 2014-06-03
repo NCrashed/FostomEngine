@@ -25,6 +25,7 @@
 module client.shaders.raytrace.matrix;
 
 import client.shaders.dsl;
+import client.shaders.extension._double;
 import opencl.all;
 import util.matrix;
 
@@ -98,6 +99,21 @@ alias MatrixKernels = Kernel!("Matrix", q{
     float4 m44MultiplyByVec(Matrix4x4 m, float4 b)
     {
         float4 ret;
+        ret.x = m[0]*b.x+m[4]*b.y+m[8]*b.z+m[12]*b.w;
+        ret.y = m[1]*b.x+m[5]*b.y+m[9]*b.z+m[13]*b.w;
+        ret.z = m[2]*b.x+m[6]*b.y+m[10]*b.z+m[14]*b.w;
+        ret.w = m[3]*b.x+m[7]*b.y+m[11]*b.z+m[15]*b.w;
+        return ret;
+    }
+});
+
+alias MatrixKernelsDouble = Kernel!(MatrixKernels, "MatrixDouble", q{
+    /**
+    *   Multiply 4x4 matrix by double4 vector
+    */
+    double4 m44MultiplyByVecDouble(Matrix4x4 m, double4 b)
+    {
+        double4 ret;
         ret.x = m[0]*b.x+m[4]*b.y+m[8]*b.z+m[12]*b.w;
         ret.y = m[1]*b.x+m[5]*b.y+m[9]*b.z+m[13]*b.w;
         ret.z = m[2]*b.x+m[6]*b.y+m[10]*b.z+m[14]*b.w;

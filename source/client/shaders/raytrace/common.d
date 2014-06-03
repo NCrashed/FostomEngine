@@ -25,6 +25,7 @@
 module client.shaders.raytrace.common;
 
 import client.shaders.dsl;
+import client.shaders.extension._double;
 public
 {
     import client.shaders.raytrace.matrix;
@@ -85,7 +86,7 @@ alias CoordTransformKernels = Kernel!(MatrixKernels, "CoordTransform", q{
             vec2.x = vec2.x - vec1.x;
             vec2.y = vec2.y - vec1.y;
             vec2.z = vec2.z - vec1.z;
-            (*rayDir) = normalize(vec2.xyz);
+            (*rayDir) = (float3)normalize(vec2.xyz);
             
             return true;
     }
