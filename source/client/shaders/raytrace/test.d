@@ -87,11 +87,8 @@ class TestRendererProg : CLKernelProgram
     override void customInitialize(CLContext clContex)
     {
         mContext = clContex;
-        clMatProjViewInvBuff = CLBuffer(clContex, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, 16*float.sizeof,
-            matProjViewInv.toOpenGL);
-        clLightPosBuffer = CLBuffer(clContex, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, 3*float.sizeof, lightPos.m.ptr);
-        clLightColorBuffer = CLBuffer(clContex, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, 3*float.sizeof, lightColor.m.ptr);
-        clLightCountBuffer = CLBuffer(clContex, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, int.sizeof, &lightCount);
+        gpuMatProjViewInv = GPUMatrix4x4(clContex);
+
         clDebugOutput = CLBuffer(clContex, CL_MEM_WRITE_ONLY | CL_MEM_COPY_HOST_PTR, mDebugOutput.length*float.sizeof,
             mDebugOutput.ptr);
     }
@@ -133,42 +130,11 @@ class TestRendererProg : CLKernelProgram
     {
         writeln(mDebugOutput);
     }
-    
-    /**
-    *   Установка тестового кирпича.
-    */
-    void setupVoxelBrick(CLCommandQueue clQ)
-    {
-        uint[][][] data = genTestData1();
-        uint[][][] norm = genTestNormalData1();
-        StdOctree octree1 = new StdOctree(data, norm);
-    
-        cl_image_format colorFormat;
-        colorFormat.image_channel_data_type = CL_UNSIGNED_INT8;
-        colorFormat.image_channel_order = CL_RGBA;
-        
-        cl_image_format normalFormat;
-        normalFormat.image_channel_data_type = CL_UNSIGNED_INT8;
-        normalFormat.image_channel_order = CL_RGBA;
-
-        vec3st size = octree1.brickPoolSize;
-        clBrickData = CLImage3D(mContext, CL_MEM_READ_ONLY, colorFormat, size.x, size.y, size.z, 0, 0, null);
-        clNormData = CLImage3D(mContext, CL_MEM_READ_ONLY, normalFormat, size.x, size.y, size.z, 0, 0, null);
-        clNodeData = CLBuffer(mContext, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, octree1.nodePoolSize, octree1.getNodeTile(0));
-
-        writeln(octree1.brickPoolMemSize, " != ", size.x*size.y*size.z*uint.sizeof);
-        assert(octree1.brickCount*216 == size.x*size.y*size.z);
-        assert(octree1.brickPoolMemSize == size.x*size.y*size.z*uint.sizeof);
-        clQ.enqueueWriteImage(clBrickData, CL_TRUE, [0, 0, 0], size.m, octree1.getBrickTile(0,0,0));
-        clQ.enqueueWriteImage(clNormData, CL_TRUE, [0, 0, 0], size.m, octree1.getNormalTile(0,0,0));
-        clQ.enqueueWriteBuffer(clNodeData, CL_TRUE, 0, octree1.nodePoolSize, octree1.getNodeTile(0));
-        clQ.enqueueWriteBuffer(clLightCountBuffer, CL_TRUE, 0, int.sizeof, &lightCount);
-    }
 
     /**
     *   Инициализурует программу. Компиляция и настройка буфферов должна быть здесь.
     */
-    override void initialize(CLContext clContex, CLCommandQueue clQ, CLImage2DGL inTex, CLImage2DGL outTex, CLSampler sampler, CLBuffer screenSize)
+    override void initialize(CLContext clContex, CLCommandQueue clQ, CLImage2DGL inTex, CLImage2DGL outTex, CLSampler sampler, GPUScreenSize screenSize)
     {
         CQ = clQ;
         
@@ -178,7 +144,7 @@ class TestRendererProg : CLKernelProgram
 
         // Извлекаем ядро
         mMainKernel = mProgram.createKernel(mainKernelName);
-        mMainKernel.setArgs(inTex, outTex, sampler, screenSize, clMatProjViewInvBuff, clDebugOutput);
+        mMainKernel.setArgs(inTex, outTex, sampler, screenSize.buffer, gpuMatProjViewInv.buffer, clDebugOutput);
     }
 
     override void acquireGLObjects()
@@ -196,10 +162,8 @@ class TestRendererProg : CLKernelProgram
     */
     override void updateCustomBuffers()
     {
-        CQ.enqueueWriteBuffer(clMatProjViewInvBuff, CL_TRUE, 0, 16*float.sizeof,
-            matProjViewInv.toOpenGL);
-        CQ.enqueueWriteBuffer(clLightPosBuffer, CL_TRUE, 0, 3*float.sizeof, lightPos.m.ptr);
-        CQ.enqueueWriteBuffer(clLightColorBuffer, CL_TRUE, 0, 3*float.sizeof, lightColor.m.ptr);
+        gpuMatProjViewInv.write(CQ, matProjViewInv);
+
         CQ.enqueueReadBuffer(clDebugOutput, CL_FALSE, 0, mDebugOutput.length*float.sizeof,
             mDebugOutput.ptr);
     }
@@ -209,134 +173,11 @@ class TestRendererProg : CLKernelProgram
         Matrix!4 matView = Matrix!(4).identity;
         Matrix!4 matProj = Matrix!(4).identity;
         Matrix!4 matProjViewInv = Matrix!(4).identity;
-        CLMemories clTexMem; 
-        CLBuffer clMatProjViewInvBuff;
+        
         CLBuffer clDebugOutput;
-        CLBuffer clLightPosBuffer;
-        CLBuffer clLightColorBuffer;
-        CLBuffer clLightCountBuffer;
-        CLBuffer clNodeData;
-        CLImage3D clBrickData;
-        CLImage3D clNormData;
-        
         float[4] mDebugOutput;
-        vec3 lightPos;
-        vec3 lightColor = vec3(1.0f, 1.0f, 1.0f);
-        int lightCount = 1;
         
-        uint[][][] genSizedArray(size_t sizex, size_t sizey, size_t sizez)
-        {
-            uint[][][] data = new uint[][][sizex];
-            foreach(ref yzslice; data)
-            {
-                yzslice = new uint[][sizey];
-                foreach(ref zslice; yzslice)
-                {
-                    zslice = new uint[sizez];
-                }
-            }
-            return data;
-        }
-        
-        uint[][][] genTestData1()
-        {
-            enum size = 8;
-            uint[][][] data = genSizedArray(size, size, size);
-            
-            data[1][1][1] = ColorRGBA.fastCompact(0, 150, 0, 255);
-            data[0][0][0] = ColorRGBA.fastCompact(150, 0, 0, 255);
-            data[1][0][0] = ColorRGBA.fastCompact(150, 0, 0, 255);
-            data[2][0][0] = ColorRGBA.fastCompact(150, 0, 0, 255);
-            data[0][0][1] = ColorRGBA.fastCompact(150, 0, 0, 255);
-            data[0][0][2] = ColorRGBA.fastCompact(150, 0, 0, 255);
-            
-            data[0][3][0] = ColorRGBA.fastCompact(0, 30, 150, 255);
-            data[1][3][0] = ColorRGBA.fastCompact(0, 30, 150, 255);
-            data[0][2][0] = ColorRGBA.fastCompact(0, 30, 150, 255);
-
-            data[4][0][0] = ColorRGBA.fastCompact(0, 30, 150, 255);
-            data[4][1][0] = ColorRGBA.fastCompact(0, 30, 150, 255);
-            data[4][2][0] = ColorRGBA.fastCompact(0, 30, 150, 255);
-            data[7][7][7] = ColorRGBA.fastCompact(150, 0, 0, 255);
-
-            /*data[0][3][0] = ColorRGBA.fastCompact(150, 0, 0, 255);
-            data[1][2][0] = ColorRGBA.fastCompact(150, 0, 0, 255);
-            data[1][3][0] = ColorRGBA.fastCompact(150, 0, 0, 255);
-            
-            data[0][2][1] = ColorRGBA.fastCompact(0, 0, 150, 255);
-            data[0][3][1] = ColorRGBA.fastCompact(0, 0, 150, 255);
-            data[1][2][1] = ColorRGBA.fastCompact(0, 0, 150, 255);
-            data[1][3][1] = ColorRGBA.fastCompact(0, 0, 150, 255);
-            
-            data[3][3][0] = ColorRGBA.fastCompact(150, 0, 0, 255);*/
-            return data;
-        }
-        
-        uint[][][] genTestNormalData1()
-        {
-            enum size = 8;
-            uint[][][] data = genSizedArray(size, size, size);
-            
-            foreach(ref mass1; data)
-                foreach(ref mass2; mass1)
-                    foreach(ref val; mass2)
-                    {
-                        val = NormalVectorDistr.fastCompact(0, 0, -1, 9.1);
-                    }
-                
-            /*data[1][1][1] = NormalVectorDistr.fastCompact(0, 1, 0, 2.1);
-            data[0][0][0] = NormalVectorDistr.fastCompact(0, 1, 0, 2.1);
-            data[1][0][0] = NormalVectorDistr.fastCompact(0, 1, 0, 2.1);
-            data[2][0][0] = NormalVectorDistr.fastCompact(0, 1, 0, 2.1);
-            data[0][0][1] = NormalVectorDistr.fastCompact(0, 1, 0, 2.1);
-            data[0][0][2] = NormalVectorDistr.fastCompact(0, 1, 0, 2.1);
-            
-            writeln(data);*/
-            /*data[0][0][0] = NormalVectorDistr.fastCompact(0, 1, 0, 0.1);
-            
-            data[0][2][0] = NormalVectorDistr.fastCompact(0, 1, 0, 0.1);
-            data[0][3][0] = NormalVectorDistr.fastCompact(0, 1, 0, 0.1);
-            data[1][2][0] = NormalVectorDistr.fastCompact(0, 1, 0, 0.1);
-            data[1][3][0] = NormalVectorDistr.fastCompact(0, 1, 0, 0.1);
-            
-            data[0][2][1] = NormalVectorDistr.fastCompact(0, 1, 0, 0.1);
-            data[0][3][1] = NormalVectorDistr.fastCompact(0, 1, 0, 0.1);
-            data[1][2][1] = NormalVectorDistr.fastCompact(0, 1, 0, 0.1);
-            data[1][3][1] = NormalVectorDistr.fastCompact(0, 1, 0, 0.1);
-            
-            data[3][3][0] = NormalVectorDistr.fastCompact(1, 0, 0, 0.1);*/
-            return data;
-        }
-        
-        uint[] genLinearData(alias func)()
-        {
-            uint[][][] data = func();
-            uint[] ret = new uint[data.length*data[0].length*data[0][0].length];
-            int i = 0;
-            foreach(ref m1; data)
-                foreach(ref m2; m1)
-                    foreach(val; m2)
-                    {
-                        ret[i++] = val;
-                    }
-            return ret;     
-        }
-        
-        string tobits(uint value)
-        {
-            string ret = "";
-            for(int i = 8*uint.sizeof-1; i >= 0; i--)
-            {
-                if(((value >> i) & 0x01) == 1)
-                {
-                    ret ~= "1";
-                } else
-                {
-                    ret ~= "0";
-                }
-            }
-            return ret;
-        }
+        GPUMatrix4x4 gpuMatProjViewInv;
     }
 }
 
@@ -350,7 +191,7 @@ private alias testKernel = Kernel!(MatrixKernels, CommonKernels, "testKernel", q
     /**
     *   Отрисовывает один кирпич. 
     */
-    __kernel void testKernel(read_only image2d_t texture, write_only image2d_t output, sampler_t smp, __global const uint* screenSize,
+    __kernel void testKernel(read_only image2d_t texture, write_only image2d_t output, sampler_t smp, ScreenSize screenSize,
         Matrix4x4 matProjViewInv, 
         __global write_only float* debugOutput)
     {
@@ -369,7 +210,7 @@ private alias testKernel = Kernel!(MatrixKernels, CommonKernels, "testKernel", q
             float3 maxBox = (float3)(5, 5, 10);
             float t0, t1;
             
-            float4 bgcolor = (float4)(1.0f, 1.0f, 1.0f, 1.0f);
+            float4 bgcolor = (float4)(0.0f, 0.0f, 0.0f, 1.0f);
             float4 color = bgcolor;
             
             if(boxIntersect(rayDir, rayOrigin, minBox, maxBox, &t0, &t1) && t1 > 0)
@@ -384,6 +225,13 @@ private alias testKernel = Kernel!(MatrixKernels, CommonKernels, "testKernel", q
                 color.z = 0.0f;
                 color.w = 1.0f;
             }
+            
+            // Lets play wit blur!
+//            #define blurConst 0.2f
+//            float4 prevColor = read_imagef(texture, smp, (int2)(idx, idy));
+//            color.x = blurConst*color.x + (1.0f-blurConst)*prevColor.x;
+//            color.y = blurConst*color.y + (1.0f-blurConst)*prevColor.y;
+//            color.z = blurConst*color.z + (1.0f-blurConst)*prevColor.z;
             
             write_imagef(output, (int2)(idx, idy), color);
         }

@@ -35,6 +35,7 @@ import client.texture;
 
 //import client.shaders.gameLife;
 import client.shaders.raytrace.test;
+import client.shaders.raytrace.common;
 
 import util.log;
 
@@ -59,21 +60,19 @@ public
     {
     	createContex();
     	initRaycastingKernels(renderTexId1, renderTexId2);
+        clScreenSize = GPUScreenSize(clContex);
 
         CQ = CLCommandQueue(clContex, clContex.devices[0]);
-        //mMainProgram = new GameLifeProg();
+        
         mRenderProg = new TestRendererProg();
         mMainProgram = mRenderProg;
-        //auto resmng = ResourceMng.getSingleton();
-        //auto tex = cast(Texture)(resmng.getResource("heightmap.png", "General"));
-        
+      
         mMainProgram.customInitialize(clContex);
         mRenderProg.projMatrix = projMatrix;
         mRenderProg.viewMatrix = viewMatrix;
-        mRenderProg.setupVoxelBrick(CQ);
+        
         mMainProgram.initialize(clContex, CQ, clRenderTexture1, clRenderTexture2, clSampler,
             clScreenSize);
-        
     }
 
     void callKernels(int screenX, int screenY, Matrix!4 viewMatrix, Matrix!4 projMatrix)
@@ -83,16 +82,12 @@ public
 //    	enum angVel = PI/180;
     	
         glFinish();
-        
-        void writingScreenSize()
-        {
-	        clScreenSizeData[0] = screenX;
-	        clScreenSizeData[1] = screenY;
-	        CQ.enqueueWriteBuffer(clScreenSize, CL_TRUE, 0, clScreenSizeData.sizeof*uint.sizeof, clScreenSizeData.ptr);        	
-        }
 
         CQ.enqueueAcquireGLObjects(clMem);
-        writingScreenSize();
+        
+        // Filling screen size
+        clScreenSize.write(CQ, screenX, screenY);
+        
         mRenderProg.projMatrix = projMatrix;
         mRenderProg.viewMatrix = viewMatrix;
         //mRenderProg.lightPosition = vec3(cos(angle)*dist, 2, sin(angle)*dist);
@@ -186,9 +181,8 @@ private
     TestRendererProg mRenderProg;
     CLMemories 	clMem;
 
-    CLSampler 	clSampler;
-    uint[2]  	clScreenSizeData;
-    CLBuffer   	clScreenSize;
+    CLSampler       clSampler;
+    GPUScreenSize   clScreenSize;
 
     GLuint	colorFBO1, colorFBO2;
     GLuint  fboSizeX, fboSizeY;
@@ -234,7 +228,6 @@ private
     void initRaycastingKernels(GLuint renderTexId1, GLuint renderTexId2)
     {
 	    clSampler = CLSampler(clContex, cast(cl_bool) false, CL_ADDRESS_CLAMP_TO_EDGE, CL_FILTER_NEAREST);
-	    clScreenSize = CLBuffer(clContex, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, clScreenSizeData.sizeof*uint.sizeof, clScreenSizeData.ptr);
 
         // Создаем буфер из текстуры
         clRenderTexture1 = CLImage2DGL(clContex, CL_MEM_READ_ONLY, GL_TEXTURE_2D, 0, renderTexId1);

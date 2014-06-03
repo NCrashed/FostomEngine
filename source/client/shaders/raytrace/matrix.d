@@ -44,10 +44,7 @@ struct GPUMatrix(size_t size)
     */
     this()(CLContext clContex, bool readOnly = true)
     {
-        auto flags = CL_MEM_COPY_HOST_PTR;
-        if(readOnly) flags |= CL_MEM_READ_ONLY;
-        
-        _buffer = CLBuffer(clContex, flags, elementsCount*float.sizeof);
+        _buffer = CLBuffer(clContex, readOnly ? CL_MEM_READ_ONLY : CL_MEM_READ_WRITE, elementsCount*float.sizeof);
     }
     
     /// Construct matrix filled from CPU matrix

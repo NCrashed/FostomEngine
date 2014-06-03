@@ -34,6 +34,15 @@ import opencl.all;
 */
 struct GPUScreenSize
 {
+    /// Creating inner buffer filled with zeros
+    this(CLContext clContex)
+    {
+        this.width  = 0;
+        this.height = 0;
+        
+        _buffer = CLBuffer(clContex, CL_MEM_READ_ONLY, 2*uint.sizeof);
+    }
+    
     /// Creating inner buffer and fills with data
     this(CLContext clContex, uint width, uint height)
     {
@@ -84,6 +93,14 @@ struct GPUScreenSize
     /// Loading stored data to GPU buffer
     void write(CLCommandQueue CQ)
     {
+        CQ.enqueueWriteBuffer(buffer, CL_TRUE, 0, 2*uint.sizeof, sizes.ptr);
+    }
+    
+    /// Loading stored data to GPU buffer
+    void write(CLCommandQueue CQ, uint width, uint height)
+    {
+        this.width = width;
+        this.height = height;
         CQ.enqueueWriteBuffer(buffer, CL_TRUE, 0, 2*uint.sizeof, sizes.ptr);
     }
     

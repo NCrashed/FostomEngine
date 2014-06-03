@@ -31,6 +31,7 @@ public
 	import derelict.opengl3.gl3;
 }
 
+import client.shaders.raytrace.common;
 import util.model.octree;
 import util.color;
 import std.stdio;
@@ -180,7 +181,7 @@ class ConeRayTracingRendererProg : CLKernelProgram
 	/**
 	*	Инициализурует программу. Компиляция и настройка буфферов должна быть здесь.
 	*/
-	override void initialize(CLContext clContex, CLCommandQueue clQ, CLImage2DGL inTex, CLImage2DGL outTex, CLSampler sampler, CLBuffer screenSize)
+	override void initialize(CLContext clContex, CLCommandQueue clQ, CLImage2DGL inTex, CLImage2DGL outTex, CLSampler sampler, GPUScreenSize screenSize)
 	{
 		CQ = clQ;
 		
@@ -190,7 +191,7 @@ class ConeRayTracingRendererProg : CLKernelProgram
 
 	    // Извлекаем ядро
 	    mMainKernel = mProgram.createKernel(mainKernelName);
-		mMainKernel.setArgs(inTex, outTex, sampler, screenSize, clMatProjViewInvBuff, clNodeData, clBrickData, clNormData, clLightPosBuffer, clLightColorBuffer, clLightCountBuffer, clDebugOutput);
+		mMainKernel.setArgs(inTex, outTex, sampler, screenSize.buffer, clMatProjViewInvBuff, clNodeData, clBrickData, clNormData, clLightPosBuffer, clLightColorBuffer, clLightCountBuffer, clDebugOutput);
 	}
 
 	override void acquireGLObjects()

@@ -31,7 +31,9 @@ public
 	import derelict.opengl3.gl3;
 }
 
+import client.shaders.raytrace.common;
 import std.stdio;
+
 /**
 *	Тестовый рендерер для box'а. Основа для более сложных рендереров.
 */
@@ -112,7 +114,7 @@ class TerrainRendererProg : CLKernelProgram
 	/**
 	*	Инициализурует программу. Компиляция и настройка буфферов должна быть здесь.
 	*/
-	override void initialize(CLContext clContex, CLCommandQueue clQ, CLImage2DGL inTex, CLImage2DGL outTex, CLSampler sampler, CLBuffer screenSize)
+	override void initialize(CLContext clContex, CLCommandQueue clQ, CLImage2DGL inTex, CLImage2DGL outTex, CLSampler sampler, GPUScreenSize screenSize)
 	{
 		CQ = clQ;
 		
@@ -122,7 +124,7 @@ class TerrainRendererProg : CLKernelProgram
 
 	    // Извлекаем ядро
 	    mMainKernel = mProgram.createKernel(mainKernelName);
-	    mMainKernel.setArgs(inTex, outTex, sampler, screenSize, clMatProjViewInvBuff, clHeightMap, clDebugOutput);
+	    mMainKernel.setArgs(inTex, outTex, sampler, screenSize.buffer, clMatProjViewInvBuff, clHeightMap, clDebugOutput);
 	}
 
 	override void acquireGLObjects()

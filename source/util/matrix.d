@@ -327,6 +327,12 @@ struct Matrix(size_t size)
 		return &m[0];
 	}
 
+	/// Constant version of getting opengl matrix
+	const(float)* toOpenGL() const
+	{
+	    return &m[0];
+	}
+	
 	/// Вывод матрицы в строку
 	string toString()
 	{

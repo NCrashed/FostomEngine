@@ -28,6 +28,7 @@
 module client.shaders.clprog;
 
 public import opencl.all;
+import client.shaders.raytrace.common;
 import util.log;
 
 /**
@@ -62,7 +63,7 @@ abstract class CLKernelProgram
 		/**
 		*	Инициализурует программу. Компиляция и настройка буфферов должна быть здесь.
 		*/
-		void initialize(CLContext clContext, CLCommandQueue clQ, CLImage2DGL inTex, CLImage2DGL outTex, CLSampler sampler, CLBuffer screenSize)
+		void initialize(CLContext clContext, CLCommandQueue clQ, CLImage2DGL inTex, CLImage2DGL outTex, CLSampler sampler, GPUScreenSize screenSize)
 		{
 			CQ = clQ;
 			mContext = clContext;
@@ -73,7 +74,7 @@ abstract class CLKernelProgram
 
 		    // Извлекаем ядро
 		    mMainKernel = mProgram.createKernel(mainKernelName);
-		    mMainKernel.setArgs(inTex, outTex, sampler, screenSize);
+		    mMainKernel.setArgs(inTex, outTex, sampler, screenSize.buffer);
 		}
 
 		/**
