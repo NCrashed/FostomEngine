@@ -25,6 +25,74 @@
 module client.shaders.dsl;
 
 /**
+*   Tuple for holding pairs of (parameter name, parameter value).
+*
+*   The template shouldn't be used outside $(B Kernel) template,
+*   the only purpose is collect pairs in one argument.
+*/
+template ConstantTuple(T...)
+{
+    static assert(T.length % 2 == 0, "Expecting pairs of (variable_name, value)");
+    static assert(checkTypes!T, "Expecting pairs of (string, some value convertable to string)");
+
+    import std.conv;
+    import std.array;
+    import std.traits;
+    
+    /// Checks types of input pairs
+    private template checkTypes(T...)
+    {
+        static if(T.length == 0)
+            enum checkTypes = true;
+        else
+        {
+            enum checkTypes =  is(typeof(T[0]) == string) 
+                            && __traits(compiles, T[1].to!string)
+                            && checkTypes!(T[2 .. $]);
+        }
+    }
+    
+    /// Count of pairs
+    enum length = T.length / 2;
+    
+    /// Name of i-th parameter
+    template paramName(TS...)
+    {
+        static assert(isUnsigned!(typeof(TS[0])), "Expecting index of type unsigned integral");
+        enum i = TS[0];
+        
+        enum paramName = T[i*2];
+    }
+    
+    /// String value of i-th parameter
+    template paramValue(TS...)
+    {
+        static assert(isUnsigned!(typeof(TS[0])), "Expecting index of type unsigned integral");
+        enum i = TS[0];
+        
+        enum paramValue = T[i*2 + 1].to!string;
+    }
+    
+    /// Performs replacing of all parameters placeholders for corresponding values
+    string insertValues(string source)
+    {
+        string temp = source;
+        foreach(ii, _T; T)
+        {
+            enum i = ii / 2;
+            temp = replace(temp, paramName!i, paramValue!i);
+        }
+        return temp;
+    }
+}
+/// Example
+unittest
+{
+    alias ParamKernel = Kernel!("KernelParam", ConstantTuple!("AVALUE", "a", "BVALUE", "b"), q{AVALUE * BVALUE});
+    static assert(ParamKernel.sources == "a * b");
+}
+
+/**
 *   Helps to organize D-like module structure for OpenCL kernels:
 *   dependencies are included only once.
 *
@@ -41,14 +109,30 @@ module client.shaders.dsl;
 *   alias Kernel4 = Kernel!(Kernel2, Kernel3, "Kernel4", q{it is kernel 4});
 *   // printing all sources including dependencies
 *   pragma(msg, Kernel4.sources);
+*
+*   // kernels can have parameters 
+*   alias ParamKernel = Kernel!(Kernel4, "KernelParam", ConstantTuple!("AVALUE", "a", "BVALUE", "b"), q{ AVALUE * BVALUE });
+*   pragma(msg, ParamKernel.sources);
 *   ----------
 */
 template Kernel(TS...)
 {
     static assert(TS.length >= 2);
-    enum kernelName   = TS[$-2];
-    private enum kernelSource = TS[$-1];
-    alias dependentKernels = TS[0 .. $-2];
+    
+    static if(is( typeof(TS[$-2]) == string) )
+    {
+        private enum hasParams = false; 
+        enum kernelName   = TS[$-2];
+        private enum kernelSource = TS[$-1];
+        alias dependentKernels = TS[0 .. $-2];
+    } else
+    {
+        private enum hasParams = true;
+        alias params = TS[$-2];
+        enum kernelName   = TS[$-3];
+        private enum kernelSource = TS[$-1];
+        alias dependentKernels = TS[0 .. $-3];
+    }
     
     /// Builds lis of unique dependencies
     private template makeDepends()
@@ -182,7 +266,14 @@ template Kernel(TS...)
         }
     }
     
-    enum sources = MakeDepsSource!(makeDepends!()) ~ kernelSource;
+    static if(!hasParams)
+    {
+        enum sources = MakeDepsSource!(makeDepends!()) ~ kernelSource;
+    }
+    else
+    {
+        enum sources = MakeDepsSource!(makeDepends!()) ~ params.insertValues(kernelSource);
+    }
 }
 
 private:
