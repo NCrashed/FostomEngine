@@ -47,7 +47,7 @@ struct GPUMatrix(size_t size)
         auto flags = CL_MEM_COPY_HOST_PTR;
         if(readOnly) flags |= CL_MEM_READ_ONLY;
         
-        buffer = CLBuffer(clContex, flags, elementsCount*float.sizeof);
+        _buffer = CLBuffer(clContex, flags, elementsCount*float.sizeof);
     }
     
     /// Construct matrix filled from CPU matrix
@@ -62,7 +62,7 @@ struct GPUMatrix(size_t size)
         auto flags = CL_MEM_COPY_HOST_PTR;
         if(readOnly) flags |= CL_MEM_READ_ONLY;
         
-        buffer = CLBuffer(clContex, flags, elementsCount*float.sizeof, source.toOpenGL);
+        _buffer = CLBuffer(clContex, flags, elementsCount*float.sizeof, source.toOpenGL);
     }
     
     /// Loading data to GPU matrix
@@ -79,7 +79,16 @@ struct GPUMatrix(size_t size)
         return Matrix!size(buff);
     }
     
-    private CLBuffer buffer;
+    /// Getting inner buffer
+    /**
+    *   Used to pass it as argument to OpenCL kernel
+    */
+    CLBuffer buffer()
+    {
+        return _buffer;
+    }
+    
+    private CLBuffer _buffer;
 }
 
 alias MatrixKernels = Kernel!("Matrix", q{
