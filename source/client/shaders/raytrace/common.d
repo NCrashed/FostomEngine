@@ -25,109 +25,13 @@
 module client.shaders.raytrace.common;
 
 import client.shaders.dsl;
-import client.shaders.raytrace.matrix;
-
-import opencl.all;
-
-/**
-*   GPU side representation of screen sizes array.
-*/
-struct GPUScreenSize
+public
 {
-    /// Creating inner buffer filled with zeros
-    this(CLContext clContex)
-    {
-        this.width  = 0;
-        this.height = 0;
-        
-        _buffer = CLBuffer(clContex, CL_MEM_READ_ONLY, 2*uint.sizeof);
-    }
-    
-    /// Creating inner buffer and fills with data
-    this(CLContext clContex, uint width, uint height)
-    {
-        this.width  = width;
-        this.height = height;
-        
-        _buffer = CLBuffer(clContex, CL_MEM_COPY_HOST_PTR | CL_MEM_READ_ONLY, 2*uint.sizeof, sizes.ptr);
-    }
-    
-    /// Creating inner buffer and fills with data
-    this(CLContext clContex, uint[2] sizes)
-    {
-        this.sizes = sizes;
-        
-        _buffer = CLBuffer(clContex, CL_MEM_COPY_HOST_PTR | CL_MEM_READ_ONLY, 2*uint.sizeof, sizes.ptr);
-    }
-    
-    /// Reading width
-    uint width()
-    {
-        return sizes[0];
-    }
-    
-    /// Writing width
-    /**
-    *   This doesn't actually updates the buffer, see $(B write) method
-    */
-    void width(uint val)
-    {
-        sizes[0] = val;
-    }
-    
-    /// Reading height
-    uint height()
-    {
-        return sizes[1];
-    }
-    
-    /// Writing width
-    /**
-    *   This doesn't actually updates the buffer, see $(B write) method
-    */
-    void height(uint val)
-    {
-        sizes[1] = val;
-    }
-    
-    /// Loading stored data to GPU buffer
-    void write(CLCommandQueue CQ)
-    {
-        CQ.enqueueWriteBuffer(buffer, CL_TRUE, 0, 2*uint.sizeof, sizes.ptr);
-    }
-    
-    /// Loading stored data to GPU buffer
-    void write(CLCommandQueue CQ, uint width, uint height)
-    {
-        this.width = width;
-        this.height = height;
-        CQ.enqueueWriteBuffer(buffer, CL_TRUE, 0, 2*uint.sizeof, sizes.ptr);
-    }
-    
-    /// Getting inner buffer
-    /**
-    *   Used to pass it as argument to OpenCL kernel
-    */
-    CLBuffer buffer()
-    {
-        return _buffer;
-    }
-    
-    private uint[2] sizes;
-    private CLBuffer _buffer;
+    import client.shaders.raytrace.matrix;
+    import client.shaders.screen;
 }
 
-/**
-*   Simplifies work with screen size array passed to root kernel
-*/
-alias SceenSizeKernels = Kernel!("ScreenSize", q{
-    /// Screen size is a uint[2] array
-    #define ScreenSize __global uint*
-    /// Macro for screen width
-    #define screenWidth(x) ((x)[0])
-    /// Macro for screen height
-    #define screenHeight(x) ((x)[1])
-});
+import opencl.all;
 
 /**
 *   Kernels to work with screen to world transformation and vice versa

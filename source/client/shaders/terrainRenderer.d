@@ -31,7 +31,7 @@ public
 	import derelict.opengl3.gl3;
 }
 
-import client.shaders.raytrace.common;
+import client.shaders.screen;
 import std.stdio;
 
 /**

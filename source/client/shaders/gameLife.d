@@ -25,6 +25,8 @@
 module client.shaders.gameLife;
 
 public import client.shaders.clprog;
+import client.shaders.dsl;
+import client.shaders.screen;
 
 /**
 *	Тестовый кернел для отрисовки игры Жизнь.
@@ -34,13 +36,13 @@ class GameLifeProg : CLKernelProgram
 	/// Имя входного kernel'а
 	override string mainKernelName() @property
 	{
-		return "gameLifeKernel";
+		return gameLifeKernel.kernelName;
 	}
 
 	/// Исходные коды kernel'a
 	override string programSource() @property
 	{
-		return gameLifeKernelSource;
+		return gameLifeKernel.sources;
 	}
 
     /**
@@ -63,16 +65,16 @@ class GameLifeProg : CLKernelProgram
 /**
 *	Исходники кернела.
 */
-private enum gameLifeKernelSource = q{
+private alias gameLifeKernel = Kernel!(SceenSizeKernels, "gameLifeKernel", q{
     /**
     *   Отрисовывает клеточный автомат на текстуру. 
     */
-    __kernel void gameLifeKernel(read_only image2d_t texture, write_only image2d_t output, sampler_t smp, __global const uint* screenSize)
+    __kernel void gameLifeKernel(read_only image2d_t texture, write_only image2d_t output, sampler_t smp, ScreenSize screenSize)
     {
         const int idx = get_global_id(0);
         const int idy = get_global_id(1);
 
-        if (idx < screenSize[0] && idy < screenSize[1])
+        if (idx < screenWidth(screenSize) && idy < screenHeight(screenSize))
         {
             float4 color;
             color = read_imagef(texture, smp, (int2)(idx, idy));
@@ -111,4 +113,4 @@ private enum gameLifeKernelSource = q{
             write_imagef(output, (int2)(idx, idy), color);
         }
     }
-};	
+});	

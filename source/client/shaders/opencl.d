@@ -33,9 +33,8 @@ import util.resources.resmng;
 import util.resources.archivemng;
 import client.texture;
 
-//import client.shaders.gameLife;
 import client.shaders.raytrace.test;
-import client.shaders.raytrace.common;
+import client.shaders.screen;
 
 import util.log;
 

@@ -28,7 +28,7 @@
 module client.shaders.clprog;
 
 public import opencl.all;
-import client.shaders.raytrace.common;
+import client.shaders.screen;
 import util.log;
 
 /**
