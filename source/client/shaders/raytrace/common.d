@@ -29,14 +29,24 @@ import client.shaders.raytrace.matrix;
 
 alias CommonKernels = Kernel!(MatrixKernels, "Common", q{
     /**
-    *   Вычисление положение и направления луча для пикселя (idx, idy).
+    *   Calculates world ray origin and direction for screen pixel (idx, idy).
+    *   Params:
+    *   matProjViewInv  inverse of projection-view matrix
+    *   screenWidth     screen width in pixels
+    *   screenHeight    screen height in pixels
+    *   idx             x coordinate of pixel from left upper corner
+    *   idy             y coordinate of pixel from left upper corner
+    *   rayDir          [out] direction of resulted ray in world space
+    *   rayOrigin       [out] position of resulted ray in world space
+    *   
+    *   Returns: -1 if cannot calculate ray, 0 if successful 
     */
-    int getPixelRay(Matrix4x4 matProjViewInv, float screenWidth, float screenHeight, int idx, int idy, float3* rayDir, float3* rayOrigin)
+    int getPixelRay(Matrix4x4 matProjViewInv, uint screenWidth, uint screenHeight, int idx, int idy, float3* rayDir, float3* rayOrigin)
     {
             float4 screenPos; 
             
-            screenPos.x =         ( ( ( 2.0f * idx ) / screenWidth ) - 1 );
-            screenPos.y =  1.0f - ( ( ( 2.0f * idy ) / screenHeight ) - 1 );
+            screenPos.x =         ( ( ( 2.0f * idx ) / (float) screenWidth ) - 1 );
+            screenPos.y =  1.0f - ( ( ( 2.0f * idy ) / (float) screenHeight ) - 1 );
             screenPos.z =  0.0f;
             screenPos.w =  1.0f;
             
