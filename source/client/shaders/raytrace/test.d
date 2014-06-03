@@ -93,7 +93,7 @@ class TestRendererProg : CLKernelProgram
     {
         mContext = clContex;
         gpuMatProjViewInv = GPUMatrix4x4(clContex);
-        gpuDebugOutput = GPUDebugOutput!(4, float)(clContex);
+        gpuDebugOutput = DOutput(clContex);
     }
 
     /**
@@ -107,7 +107,7 @@ class TestRendererProg : CLKernelProgram
             matProjViewInv = (matProj * matView).inverse();
         } catch(MatrixNoInverse exp)
         {
-            
+            //std.stdio.writeln("NO INVERSE! PAIN!");
         }
     }
 
@@ -175,21 +175,22 @@ class TestRendererProg : CLKernelProgram
         Matrix!4 matProj = Matrix!(4).identity;
         Matrix!4 matProjViewInv = Matrix!(4).identity;
         
-        GPUDebugOutput!(4, float).BufferType tempBuffer;
-        GPUDebugOutput!(4, float) gpuDebugOutput;
+        alias DOutput = GPUDebugOutput!(4, float);
+        DOutput.BufferType tempBuffer;
+        DOutput gpuDebugOutput;
+        
         GPUMatrix4x4 gpuMatProjViewInv;
     }
 }
 
 /// Исходники кернела
-private alias testKernel = Kernel!(MatrixKernels, CommonKernels, "testKernel", q{
+private alias testKernel = Kernel!(DebugOutputKernels, MatrixKernels, CommonKernels, "testKernel", q{
 
     /**
     *   Отрисовывает один кирпич. 
     */
-    __kernel void testKernel(read_only image2d_t texture, write_only image2d_t output, sampler_t smp, ScreenSize screenSize,
-        Matrix4x4 matProjViewInv, 
-        __global write_only float* debugOutput)
+    __kernel void testKernel(read_only image2d_t texture, write_only image2d_t output, sampler_t smp
+        , ScreenSize screenSize, Matrix4x4 matProjViewInv, DebugOutput debugOutput)
     {
         const int idx = get_global_id(0);
         const int idy = get_global_id(1);
@@ -229,6 +230,10 @@ private alias testKernel = Kernel!(MatrixKernels, CommonKernels, "testKernel", q
 //            color.y = blurConst*color.y + (1.0f-blurConst)*prevColor.y;
 //            color.z = blurConst*color.z + (1.0f-blurConst)*prevColor.z;
             
+            debugOutput[0] = 0.0f;
+            debugOutput[1] = 0.0f;
+            debugOutput[2] = 0.0f;
+            debugOutput[3] = 0.0f;
             write_imagef(output, (int2)(idx, idy), color);
         }
     }

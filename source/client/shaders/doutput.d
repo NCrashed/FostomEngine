@@ -34,18 +34,20 @@ struct GPUDebugOutput(size_t size = 4, ElementType = float)
 {
     /// Shortcut alias for storing read result for inner code
     public alias BufferType = ElementType[size];
+    enum MemoryLength = size*ElementType.sizeof;
     
     /// Initing buffer
     this(CLContext clContex)
     {
-        _buffer = CLBuffer(clContex, CL_MEM_WRITE_ONLY, size*ElementType.sizeof);
+        BufferType buff; buff[] = 0;
+        _buffer = CLBuffer(clContex, CL_MEM_WRITE_ONLY | CL_MEM_COPY_HOST_PTR, MemoryLength, buff.ptr);
     }
     
     /// Reading output from GPU
-    ElementType[size] read(CLCommandQueue CQ)
+    BufferType read(CLCommandQueue CQ)
     {
-        ElementType[size] buff;
-        CQ.enqueueReadBuffer(_buffer, CL_FALSE, 0, size*ElementType.sizeof, buff.ptr);
+        BufferType buff; 
+        CQ.enqueueReadBuffer(_buffer, CL_TRUE, 0, MemoryLength, buff.ptr);
         return buff;
     }
     
