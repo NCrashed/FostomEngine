@@ -47,7 +47,7 @@ template Kernel(TS...)
 {
     static assert(TS.length >= 2);
     enum kernelName   = TS[$-2];
-    enum kernelSource = TS[$-1];
+    private enum kernelSource = TS[$-1];
     alias dependentKernels = TS[0 .. $-2];
     
     /// Builds lis of unique dependencies

@@ -50,7 +50,7 @@ alias CommonKernels = Kernel!(MatrixKernels, "Common", q{
             screenPos.z =  0.0f;
             screenPos.w =  1.0f;
             
-            float4 vec1 = multiply(matProjViewInv, screenPos);
+            float4 vec1 = m44MultiplyByVec(matProjViewInv, screenPos);
             if(vec1.w == 0)
             {
                 return false;
@@ -61,7 +61,7 @@ alias CommonKernels = Kernel!(MatrixKernels, "Common", q{
             vec1.z = vec1.z*vec1.w;
             
             screenPos.z = 1.0f;
-            float4 vec2 = multiply(matProjViewInv, screenPos);
+            float4 vec2 = m44MultiplyByVec(matProjViewInv, screenPos);
             if(vec2.w == 0)
             {
                 return false;

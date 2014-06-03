@@ -72,13 +72,13 @@ class TestRendererProg : CLKernelProgram
     /// Имя входного kernel'а
     override string mainKernelName() @property
     {
-        return "renderKernel";
+        return testKernel.kernelName;
     }
 
     /// Исходные коды kernel'a
     override string programSource() @property
     {
-        return coneRayTracingProgSource;
+        return testKernel.sources;
     }
 
     /**
@@ -178,7 +178,7 @@ class TestRendererProg : CLKernelProgram
 
         // Извлекаем ядро
         mMainKernel = mProgram.createKernel(mainKernelName);
-        mMainKernel.setArgs(inTex, outTex, sampler, screenSize, clMatProjViewInvBuff, clNodeData, clBrickData, clNormData, clLightPosBuffer, clLightColorBuffer, clLightCountBuffer, clDebugOutput);
+        mMainKernel.setArgs(inTex, outTex, sampler, screenSize, clMatProjViewInvBuff, clDebugOutput);
     }
 
     override void acquireGLObjects()
@@ -340,495 +340,18 @@ class TestRendererProg : CLKernelProgram
     }
 }
 
+import client.shaders.dsl;
+import client.shaders.raytrace.matrix;
+import client.shaders.raytrace.common;
+
 /// Исходники кернела
-private enum coneRayTracingProgSource = q{
-
-    /**
-    *   Получает следующий воксель, в который ударился луч.
-    */
-    float4 traverseBrick(read_only image3d_t brick, sampler_t smp, float3* oldtMax, int3* oldPos, int3 step, float3 delta, int3 justOut)
-    {
-        float tMaxX = (*oldtMax).x, tMaxY = (*oldtMax).y, tMaxZ = (*oldtMax).z;
-        int X = (*oldPos).x, Y = (*oldPos).y, Z = (*oldPos).z;
-        float4 color;
-        do
-        {
-            if(tMaxX < tMaxY)
-            {
-                if(tMaxX < tMaxZ)
-                {
-                    X = X + step.x;
-                    if(X == justOut.x)
-                        return (float4)(-1.0f, -1.0f, -1.0f, -1.0f);
-                    tMaxX = tMaxX + delta.x;    
-                } else
-                {
-                    Z = Z + step.z;
-                    if(Z == justOut.z)
-                        return (float4)(-1.0f, -1.0f, -1.0f, -1.0f);
-                    tMaxZ = tMaxZ + delta.z;    
-                }
-            } else
-            {
-                if(tMaxY < tMaxZ)
-                {
-                    Y = Y + step.y;
-                    if(Y == justOut.y)
-                        return (float4)(-1.0f, -1.0f, -1.0f, -1.0f);
-                    tMaxY = tMaxY + delta.y;    
-                } else
-                {
-                    Z = Z + step.z;
-                    if(Z == justOut.z)
-                        return (float4)(-1.0f, -1.0f, -1.0f, -1.0f);
-                    tMaxZ = tMaxZ + delta.z;    
-                }
-            }
-            uint4 colorui = read_imageui(brick, smp, (int4)(X,Y,Z,0));
-            color.x = (float)colorui.x / 255.0f;
-            color.y = (float)colorui.y / 255.0f;
-            color.z = (float)colorui.z / 255.0f;
-            color.w = (float)colorui.w / 255.0f;
-        } while(color.w == 0);
-        
-        (*oldtMax).x = tMaxX;
-        (*oldtMax).y = tMaxY;
-        (*oldtMax).z = tMaxZ;
-        (*oldPos).x = X;
-        (*oldPos).y = Y;
-        (*oldPos).z = Z;
-        return color;
-    }
-    /**
-    *   Определение пересечения коробки и луча
-    */
-    bool boxIntersect(float3 rayDir, float3 rayOrigin, float3 minBox, float3 maxBox, float* t0, float* t1)
-    {
-        float tmin, tmax, tymin, tymax, tzmin, tzmax, div;
-        div = 1 / rayDir.x;
-        if (div >= 0)
-        {
-            tmin = (minBox.x - rayOrigin.x) * div;
-            tmax = (maxBox.x - rayOrigin.x) * div;
-        } else
-        {
-            tmin = (maxBox.x - rayOrigin.x) * div;
-            tmax = (minBox.x - rayOrigin.x) * div;
-        }
-        
-        div = 1 / rayDir.y;
-        if (div >= 0)
-        {
-            tymin = (minBox.y - rayOrigin.y) * div;
-            tymax = (maxBox.y - rayOrigin.y) * div;
-        } else
-        {
-            tymin = (maxBox.y - rayOrigin.y) * div;
-            tymax = (minBox.y - rayOrigin.y) * div;
-        }
-        
-        if ( (tmin > tymax) || (tymin > tmax) )
-        {
-            return false;
-        }
-        if (tymin > tmin)
-            tmin = tymin;
-        if (tymax < tmax)
-            tmax = tymax;
-            
-        div = 1 / rayDir.z; 
-        if (div >= 0)
-        {
-            tzmin = (minBox.z - rayOrigin.z) * div;
-            tzmax = (maxBox.z - rayOrigin.z) * div;
-        } else
-        {
-            tzmin = (maxBox.z - rayOrigin.z) * div;
-            tzmax = (minBox.z - rayOrigin.z) * div;
-        }
-        
-        if ( (tmin > tzmax) || (tzmin > tmax) )
-        {
-            return false;
-        }   
-        if (tzmin > tmin)
-            tmin = tzmin;
-        if (tzmax < tmax)
-            tmax = tzmax;
-        
-        *t0 = tmin;
-        *t1 = tmax;
-        return true;    
-    }
-    
-    /**
-    *   Умножение вектора на матрицу
-    */
-    float4 multiply(__global float* m, float4 b)
-    {
-        float4 ret;
-        ret.x = m[0]*b.x+m[4]*b.y+m[8]*b.z+m[12]*b.w;
-        ret.y = m[1]*b.x+m[5]*b.y+m[9]*b.z+m[13]*b.w;
-        ret.z = m[2]*b.x+m[6]*b.y+m[10]*b.z+m[14]*b.w;
-        ret.w = m[3]*b.x+m[7]*b.y+m[11]*b.z+m[15]*b.w;
-        return ret;
-    }
-
-    /**
-    *   Вычисление положение и направления луча для пикселя (idx, idy).
-    */
-    int getPixelRay(__global float* matProjViewInv, float screenWidth, float screenHeight, int idx, int idy, float3* rayDir, float3* rayOrigin)
-    {
-            float4 screenPos; 
-            
-            screenPos.x =         ( ( ( 2.0f * idx ) / screenWidth ) - 1 );
-            screenPos.y =  1.0f - ( ( ( 2.0f * idy ) / screenHeight ) - 1 );
-            screenPos.z =  0.0f;
-            screenPos.w =  1.0f;
-            
-            float4 vec1 = multiply(matProjViewInv, screenPos);
-            if(vec1.w == 0)
-            {
-                return -1;
-            }
-            vec1.w = 1.0f/vec1.w;
-            vec1.x = vec1.x*vec1.w;
-            vec1.y = vec1.y*vec1.w;
-            vec1.z = vec1.z*vec1.w;
-            
-            screenPos.z = 1.0f;
-            float4 vec2 = multiply(matProjViewInv, screenPos);
-            if(vec2.w == 0)
-            {
-                return -1;
-            }
-            vec2.w = 1.0f/vec2.w;
-            vec2.x = vec2.x*vec2.w;
-            vec2.y = vec2.y*vec2.w;
-            vec2.z = vec2.z*vec2.w;
-            
-            (*rayOrigin) = vec1.xyz;
-            
-            vec2.x = vec2.x - vec1.x;
-            vec2.y = vec2.y - vec1.y;
-            vec2.z = vec2.z - vec1.z;
-            (*rayDir) = normalize(vec2.xyz);
-            
-            return 0;
-    }
-    
-    /**
-    *   Вычисляет значение нормали из значения, полученного из 3D текстуры.
-    */
-    float3 extractNormal(uint4 vec)
-    {
-        float3 norm;
-        int sign = (vec.x & 0x80) == 0 ? 1 : -1;
-        norm.x = sign*((vec.x & 0x7F)/(float)0x7F);
-        sign = (vec.y & 0x80) == 0 ? 1 : -1;
-        norm.y = sign*((vec.y & 0x7F)/(float)0x7F);
-        sign = (vec.z & 0x80) == 0 ? 1 : -1;
-        norm.z = sign*((vec.z & 0x7F)/(float)0x7F);
-        return norm;
-    }
-    
-    float4 renderBrick(read_only image3d_t brickColor, read_only image3d_t brickNormal, uint3 brickOffset, sampler_t smp, __global float* lightsPos, __global float* lightsColor, __global int* lightsCount,
-        float3 rayOrigin, float3 rayDir, float t0, float3 minBox, float3 maxBox, __global write_only float* debugOutput)
-    {
-        //=======================
-        //  Initialization part
-        //=======================
-        float3 tMax;
-        int3 pos;
-        int3 step;
-        int3 justOut;
-        float3 delta;
-        
-        float4 accum = (float4)(0.0f, 0.0f, 0.0f, 1.0f);
-        #define BORDER_SIZE 1
-        #define BRICK_SIZE 6
-        
-        // finding justOut
-        justOut.x = brickOffset.x + BRICK_SIZE - BORDER_SIZE;
-        justOut.y = brickOffset.y + BRICK_SIZE - BORDER_SIZE;
-        justOut.z = brickOffset.z + BRICK_SIZE - BORDER_SIZE;
-        
-        debugOutput[0] = brickOffset.x;
-        debugOutput[1] = brickOffset.y;
-        debugOutput[2] = brickOffset.z;
-        debugOutput[3] = 0.0f;
-            
-        if(rayDir.x < 0)
-            justOut.x = brickOffset.x + BORDER_SIZE-1;
-        if(rayDir.y < 0)
-            justOut.y = brickOffset.y + BORDER_SIZE-1;
-        if(rayDir.z < 0)
-            justOut.z = brickOffset.z + BORDER_SIZE-1;
-            
-        // finding pos
-        float3 voxelSize = maxBox - minBox;
-        voxelSize.x = voxelSize.x / (BRICK_SIZE - BORDER_SIZE);
-        voxelSize.y = voxelSize.y / (BRICK_SIZE - BORDER_SIZE);
-        voxelSize.z = voxelSize.z / (BRICK_SIZE - BORDER_SIZE); 
-        float3 rayPos = (rayOrigin + t0*rayDir)-minBox; 
-        pos.x = brickOffset.x + (int)(rayPos.x / voxelSize.x);
-        pos.y = brickOffset.y + (int)(rayPos.y / voxelSize.y);
-        pos.z = brickOffset.z + (int)(rayPos.z / voxelSize.z);
-        
-        
-        // finding step
-        step = (int3)(1,1,1);
-        if(rayDir.x < 0)
-            step.x = -1;
-        if(rayDir.y < 0)
-            step.y = -1;
-        if(rayDir.z < 0)
-            step.z = -1;
-            
-        // finding tMax
-        if(rayDir.x < 0)
-            tMax.x = (pos.x*voxelSize.x - rayPos.x) / rayDir.x;
-        else    
-            tMax.x = ((pos.x+1)*voxelSize.x - rayPos.x) / rayDir.x;
-            
-        if(rayDir.y < 0)
-            tMax.y = (pos.y*voxelSize.y - rayPos.y) / rayDir.y;
-        else    
-            tMax.y = ((pos.y+1)*voxelSize.y - rayPos.y) / rayDir.y;
-
-        if(rayDir.z < 0)
-            tMax.z = (pos.z*voxelSize.z - rayPos.z) / rayDir.z;
-        else    
-            tMax.z = ((pos.z+1)*voxelSize.z - rayPos.z) / rayDir.z;
-            
-        // finding delta
-        delta.x = step.x * voxelSize.x / rayDir.x;
-        delta.y = step.y * voxelSize.y / rayDir.y;
-        delta.z = step.z * voxelSize.z / rayDir.z;
-            
-        //=======================
-        //  Render part
-        //=======================
-        
-        // presetting first voxel
-        uint4 colorui = read_imageui(brickColor, smp, (int4)(pos.x, pos.y, pos.z, 0));
-        float4 color;
-        color.x = (float)colorui.x / 255.0f;
-        color.y = (float)colorui.y / 255.0f;
-        color.z = (float)colorui.z / 255.0f;
-        color.w = (float)colorui.w / 255.0f;
-        
-        uint4 normalDistr = read_imageui(brickNormal, smp, (int4)(pos.x, pos.y, pos.z, 0));
-        float3 normal = extractNormal(normalDistr);
-        
-        float dispertion = length(normal);
-        dispertion = (1 - dispertion)/dispertion;
-        normal = normalize(normal);
-        
-        do
-        {   
-            float3 voxelPos;
-            voxelPos.x = voxelSize.x * ((float)pos.x + 0.5);
-            voxelPos.y = voxelSize.y * ((float)pos.y + 0.5);
-            voxelPos.z = voxelSize.z * ((float)pos.z + 0.5);
-            
-            if(color.w > 0)
-            {
-                for(int i = 0; i<*lightsCount; i++)
-                {
-                    // Phong shading model
-//                  float3 lightDir = normalize((float3)(lightsPos[3*i], lightsPos[3*i+1], lightsPos[3*i+2]) - voxelPos);
-//                  float4 lightColor = (float4)(lightsColor[4*i], lightsColor[4*i+1], lightsColor[4*i+2], lightsColor[4*i+3]);
-//                  
-//                  float diffuseDot = max(0.0f, dot(lightDir, normal));
-//                  float3 specVec = 2*diffuseDot*normal - lightDir;
-//                  float specDot = pow(max(0.0f,dot(specVec, normal)), dispertion);
-//                  accum.x = accum.x + color.x*color.w*diffuseDot + lightColor.x*specDot;
-//                  accum.y = accum.y + color.y*color.w*diffuseDot + lightColor.y*specDot;
-//                  accum.z = accum.z + color.z*color.w*diffuseDot + lightColor.z*specDot;
-//                  accum.w = accum.w*(1 - color.w);
-                    
-                    accum.x = accum.x + color.x*color.w;
-                    accum.y = accum.y + color.y*color.w;
-                    accum.z = accum.z + color.z*color.w;
-                    accum.w = accum.w*(1 - color.w);
-                }
-            }
-            
-            // traversing to new voxel
-            color = traverseBrick(brickColor, smp, &tMax, &pos, step, delta, justOut);
-            
-            // extracting normal and dispertion
-            normalDistr = read_imageui(brickNormal, smp, (int4)(pos.x, pos.y, pos.z, 0));   
-            normal = extractNormal(normalDistr);
-            dispertion = length(normal);
-            dispertion = (1 - dispertion)/dispertion;
-            normal = normalize(normal);
-        } 
-        while(color.w > 0.0f && accum.w > 0.01f);
-        
-        // returning from transparancy to opacity
-        accum.w = 1 - accum.w;
-        
-        return accum;
-    }
-
-    bool isNodeLeaf(uint val)
-    {
-        return ((val >> 31) & 0x01) == 1;
-    }
-
-    bool isNodeConstant(uint val)
-    {
-        return ((val >> 30) & 0x01) == 1;
-    }
-
-    uint3 getBrickAddress(uint val)
-    {
-        return (uint3)((val >> 20) & 0x3FF, (val >> 10) & 0x3FF, val & 0x3FF);
-    }
-
-    float4 getBrickConstantColor(uint val)
-    {
-        return (float4)(val & 0x000000FF, (val & 0x0000FF00) >> 8, (val & 0x00FF0000) >> 16, (val & 0xFF000000) >> 24);
-    }
-
-    uint getNextTileAddress(uint val)
-    {
-        return val & 0x3FFFFFFF;
-    }
-
-//  float4 renderOctree(__global uint* nodePool, read_only image3d_t brickPool, read_only image3d_t brickNormalPool, sampler_t smp, 
-//                     __global float* lightsPos, __global float* lightsColor, __global int* lightsCount,
-//                     float3 rayOrigin, float3 rayDir, float t0, float3 minBox, float3 maxBox,
-//                      __global write_only float* debugOutput)
-//  {
-//      uint address = *nodePool;
-//      uint color = *(nodePool+1);
-//
-//      if(isNodeLeaf(address))
-//      {
-//          return renderBrick(brickPool, brickNormalPool, getBrickAddress(color), smp, 
-//              lightsPos, lightsColor, lightsCount, rayOrigin, rayDir, t0, minBox, maxBox);
-//      }
-//
-//      if(isNodeConstant(address))
-//      {
-//          return getBrickConstantColor(color);
-//      }
-//
-//      address = getNextTileAddress(address);
-//      float3 currMinBox = minBox;
-//      float3 currMaxBox = maxBox;
-//
-//      float3 rayPos = (rayOrigin + t0*rayDir)-currMinBox; 
-//      rayPos.x = rayPos.x / (currMaxBox.x - currMinBox.x);
-//      rayPos.y = rayPos.y / (currMaxBox.y - currMinBox.y);
-//      rayPos.z = rayPos.z / (currMaxBox.z - currMinBox.z);
-//
-//      float4 accum = (float4)(0.0f, 0.0f, 0.0f, 1.0f);
-//      bool stop = false;
-//      while(!stop)
-//      {
-//          uint3 off = (uint3)((uint)(2*rayPos.x), (uint)(2*rayPos.y), (uint)(2*rayPos.z));
-//          if(off.x == 2) off.x = 1;
-//          if(off.y == 2) off.y = 1;
-//          if(off.z == 2) off.z = 1;
-//
-//          __global uint* currentTile = nodePool+address*16;
-//          __global uint* currentNode = currentTile + (off.x + 2*off.y + 4*off.z)*2;
-//
-//          if(off.x == 0)
-//          {
-//              currMaxBox.x -= (currMaxBox.x-currMinBox.x)/2;
-//          } else
-//          {
-//              currMinBox.x += (currMaxBox.x-currMinBox.x)/2;
-//          }
-//          if(off.y == 0)
-//          {
-//              currMaxBox.y -= (currMaxBox.y-currMinBox.y)/2;
-//          } else
-//          {
-//              currMinBox.y += (currMaxBox.y-currMinBox.y)/2;
-//          }
-//          if(off.z == 0)
-//          {
-//              currMaxBox.z -= (currMaxBox.z-currMinBox.z)/2;
-//          } else
-//          {
-//              currMinBox.z += (currMaxBox.z-currMinBox.z)/2;
-//          }
-//
-//          debugOutput[0] = currMinBox.x;
-//            debugOutput[1] = currMaxBox.x;
-//            debugOutput[2] = 0.0f;
-//            debugOutput[3] = 0.0f;
-//            
-//          address = *currentNode;
-//          color = *(currentNode+1);
-
-            /*debugOutput[0] = getBrickAddress(color).x;
-            debugOutput[1] = getBrickAddress(color).y;
-            debugOutput[2] = getBrickAddress(color).z;
-            debugOutput[3] = isNodeLeaf(address);*/
-
-//          float t1;
-//          if(isNodeLeaf(address))
-//          {
-//              if(boxIntersect(rayDir, rayOrigin, currMinBox, currMaxBox, &t0, &t1) && t1 > 0)
-//              {
-//                  if(t0 < 0)
-//                  {
-//                      t0 = 0;
-//                  }
-//                  float4 tempColor = renderBrick(brickPool, brickNormalPool, getBrickAddress(color), smp, 
-//                      lightsPos, lightsColor, lightsCount, rayOrigin, rayDir, t0, currMinBox, currMaxBox);
-//
-//                  accum.x = accum.x + tempColor.x*tempColor.w;
-//                  accum.y = accum.y + tempColor.y*tempColor.w;
-//                  accum.z = accum.z + tempColor.z*tempColor.w;
-//                  accum.w = accum.w*(1 - tempColor.w);
-//                  if(accum.w < 0.01f)
-//                  {
-//                      accum.w = 1 - accum.w;
-//                      return accum;
-//                  }
-//
-//                  float3 nextPos = (rayOrigin + t1*rayDir)-currMinBox; 
-//                  uint3 noff = (uint3)((uint)(2*nextPos.x), (uint)(2*nextPos.y), (uint)(2*nextPos.z));
-//                  if(noff.x == 2) noff.x = 1;
-//                  if(noff.y == 2) noff.y = 1;
-//                  if(noff.z == 2) noff.z = 1;
-//
-//                  if(noff.x == off.x && noff.y == off.y && noff.z == off.z)
-//                  {
-//                      accum.w = 1 - accum.w;
-//                      return accum;
-//                  }
-//
-//                  t0 = t1;
-//                  currMinBox = minBox;
-//                  currMaxBox = maxBox;
-//                  rayPos = nextPos;
-//                  address = *nodePool;
-//              }
-//              stop = true; // STOPED THERE
-//          }
-//
-//          rayPos = 2*rayPos - (float3)((uint)(2*rayPos.x), (uint)(2*rayPos.y), (uint)(2*rayPos.z));
-//      }
-//
-//      accum.w = 1 - accum.w;
-//      return accum;
-//  }
+private alias testKernel = Kernel!(MatrixKernels, CommonKernels, "testKernel", q{
 
     /**
     *   Отрисовывает один кирпич. 
     */
-    __kernel void renderKernel(read_only image2d_t texture, write_only image2d_t output, sampler_t smp, __global const uint* screenSize,
-        __global float* matProjViewInv, __global uint* nodePool, read_only image3d_t brickPool, read_only image3d_t normalBrickPool, 
-        __global float* lightsPos, __global float* lightsColor, __global int* lightsCount, 
+    __kernel void testKernel(read_only image2d_t texture, write_only image2d_t output, sampler_t smp, __global const uint* screenSize,
+        Matrix4x4 matProjViewInv, 
         __global write_only float* debugOutput)
     {
         const int idx = get_global_id(0);
@@ -837,7 +360,7 @@ private enum coneRayTracingProgSource = q{
         if (idx < screenSize[0] && idy < screenSize[1])
         {
             float3 rayDir, rayOrigin;
-            if(getPixelRay(matProjViewInv, screenSize[0], screenSize[1], idx, idy, &rayDir, &rayOrigin) < 0)
+            if(!getPixelRay(matProjViewInv, screenSize[0], screenSize[1], idx, idy, &rayDir, &rayOrigin))
             {
                 return;
             }
@@ -856,23 +379,13 @@ private enum coneRayTracingProgSource = q{
                     t0 = 0;
                 }
 
-                uint scolor = *(nodePool+1);
-                color = renderBrick(brickPool, normalBrickPool, getBrickAddress(scolor), smp, 
-                        lightsPos, lightsColor, lightsCount, rayOrigin, rayDir, t0, minBox, maxBox, debugOutput);
-                //color = renderBrick(brick, normalBrick, smp, lightsPos, lightsColor, lightsCount, rayOrigin, rayDir, t0, minBox, maxBox);
-//              color = renderOctree(nodePool, brickPool, normalBrickPool, smp, lightsPos, lightsColor, 
-//                  lightsCount, rayOrigin, rayDir, t0, minBox, maxBox, debugOutput);
-
-                if(color.w < 0.99f)
-                {
-                    color.x = color.x + bgcolor.x;
-                    color.y = color.y + bgcolor.y;
-                    color.z = color.z + bgcolor.z;
-                    color.w = 1.0f;
-                }
+                color.x = 1.0f;
+                color.y = 1.0f;
+                color.z = 0.0f;
+                color.w = 1.0f;
             }
             
             write_imagef(output, (int2)(idx, idy), color);
         }
     }
-};
+});
