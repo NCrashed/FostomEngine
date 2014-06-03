@@ -245,6 +245,8 @@ class RenderSystem
 
             unloadModel();
         }*/
+        std.stdio.writeln(camera.position);
+        std.stdio.writeln(camera.dir);
         callKernels(mGraphicConfigs.screenX, mGraphicConfigs.screenY, camera.getMatrix(), mProjection); 
         drawQuad();
 
@@ -365,15 +367,17 @@ class RenderSystem
         return mWindow;
     }
 
-    /// Returns pointer to window
-    /**
-    *   Simplifies using glfwSwapBuffers and others glfw callback setting.
-    */
-    @property GLFWwindow* windowPtr()
+    /// Returns current cursor position
+    void getCursorPos(out double x, out double y)
     {
-        return mWindow;
+        glfwGetCursorPos(mWindow, &x, &y);
     }
-
+    
+    void setCursorPos(double x, double y)
+    {
+        glfwSetCursorPos(mWindow, x, y);
+    }
+    
     /// Получение времени с предыдущего кадра
     @property double timing()
     {

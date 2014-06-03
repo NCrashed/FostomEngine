@@ -60,11 +60,11 @@ class MainWorld : ClientWorld
 	{
 		mCamera = camera;
 
-		mCamera.position.x = 0;
-		mCamera.position.y = 2;
-		mCamera.position.z = 0;
+		mCamera.position.x = 2;
+		mCamera.position.y = 0;
+		mCamera.position.z = -2;
 
-		mCamera.target = vec3(0, 0, -1);
+		mCamera.target = vec3(2, 0.1, -3);
 
 		auto resmng = ResourceMng.getSingleton();
 		auto scenemng = RenderSystem.getSingleton().sceneManager;
@@ -157,10 +157,10 @@ class MainWorld : ClientWorld
 			mCamMode = !mCamMode;
 			if(!mCamMode)
 			{
-				glfwSetInputMode(rendersys.windowPtr, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+				glfwSetInputMode(rendersys.window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 			} else
 			{
-				glfwSetInputMode(rendersys.windowPtr, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+				glfwSetInputMode(rendersys.window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 			}
 		} else if (key == GLFW_KEY_PAUSE)
 		{

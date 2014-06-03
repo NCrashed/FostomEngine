@@ -63,7 +63,7 @@ class App
 		rendersys = RenderSystem.getSingleton();
 		rendersys.initRenderSys("Fostom Engine");
 		rendersys.setSceneManager(STD_SCENE_MANAGER);
-
+		
 		initScene();
 		
 		loadWorld(new MainWorld);
@@ -95,7 +95,7 @@ class App
 		    //rendersys.drawScenePoly(mCamera);
 
 			// Swap buffers
-			glfwSwapBuffers(rendersys.windowPtr);
+			glfwSwapBuffers(rendersys.window);
 			glfwPollEvents();
 
 			update(rendersys.timing);
@@ -210,11 +210,11 @@ private:
 		import std.stream;
 		/// Заливка фона
 		
-		glfwSetWindowSizeCallback(rendersys.windowPtr, &reshape );  
-		glfwSetCursorPosCallback(rendersys.windowPtr, &mouseUpdate );
-		glfwSetKeyCallback(rendersys.windowPtr, &charUpdate);
+		glfwSetWindowSizeCallback(rendersys.window, &reshape );  
+		glfwSetCursorPosCallback(rendersys.window, &mouseUpdate );
+		glfwSetKeyCallback(rendersys.window, &charUpdate);
 
-		glfwSetInputMode(rendersys.windowPtr, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+		glfwSetInputMode(rendersys.window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
 		// Создание камеры
 		mCamera = new Camera;  
@@ -226,8 +226,9 @@ private:
 		mCamera.target = vec3(0, 0, -1);
 
 		// Инициализация мышки
-		oldposx = rendersys.graphicConfigs.screenX/2;
-		oldposy = rendersys.graphicConfigs.screenY/2;
+        oldposx = 0.5;
+        oldposy = 0.5;
+        rendersys.setCursorPos(oldposx, oldposy);
 		
 		// FPS counter
 		debug
@@ -240,7 +241,7 @@ private:
 	/// Обновление всех систем
 	void update(double dt)
 	{
-		mCurrWorld.update(rendersys.windowPtr, dt);
+		mCurrWorld.update(rendersys.window, dt);
 
 		// Апдейт камеры
 		mCamera.update(dt);
