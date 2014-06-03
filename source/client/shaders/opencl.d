@@ -34,7 +34,7 @@ import util.resources.archivemng;
 import client.texture;
 
 //import client.shaders.gameLife;
-import client.shaders.coneRayTracing;
+import client.shaders.raytrace.test;
 
 import util.log;
 
@@ -62,7 +62,7 @@ public
 
         CQ = CLCommandQueue(clContex, clContex.devices[0]);
         //mMainProgram = new GameLifeProg();
-        mRenderProg = new ConeRayTracingRendererProg();
+        mRenderProg = new TestRendererProg();
         mMainProgram = mRenderProg;
         //auto resmng = ResourceMng.getSingleton();
         //auto tex = cast(Texture)(resmng.getResource("heightmap.png", "General"));
@@ -78,9 +78,9 @@ public
 
     void callKernels(int screenX, int screenY, Matrix!4 viewMatrix, Matrix!4 projMatrix)
     {
-    	static float angle = 0;
-    	enum dist = 3;
-    	enum angVel = PI/180;
+//    	static float angle = 0;
+//    	enum dist = 3;
+//    	enum angVel = PI/180;
     	
         glFinish();
         
@@ -95,7 +95,7 @@ public
         writingScreenSize();
         mRenderProg.projMatrix = projMatrix;
         mRenderProg.viewMatrix = viewMatrix;
-        mRenderProg.lightPosition = vec3(cos(angle)*dist, 2, sin(angle)*dist);
+        //mRenderProg.lightPosition = vec3(cos(angle)*dist, 2, sin(angle)*dist);
         mRenderProg.printDebugInfo();
         
         mMainProgram.acquireGLObjects();
@@ -106,11 +106,11 @@ public
 
         CQ.finish();
         
-        angle += angVel;
-        if(angle > 2*PI)
-        {
-        	angle = 0;
-        }
+//        angle += angVel;
+//        if(angle > 2*PI)
+//        {
+//        	angle = 0;
+//        }
     }
 
     /**
@@ -183,7 +183,7 @@ private
 
     CLImage2DGL clRenderTexture1, clRenderTexture2;
     CLKernelProgram mMainProgram;
-    ConeRayTracingRendererProg mRenderProg;
+    TestRendererProg mRenderProg;
     CLMemories 	clMem;
 
     CLSampler 	clSampler;
