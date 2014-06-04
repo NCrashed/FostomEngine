@@ -180,61 +180,55 @@ class TestRendererProg : CLKernelProgram
         DOutput gpuDebugOutput;
         
         GPUMatrix4x4 gpuMatProjViewInv;
+        
+        /// Исходники кернела
+        private alias testKernel = Kernel!(DOutput.Kernels, MatrixKernels, CommonKernels, "testKernel", q{
+    
+        /**
+        *   Отрисовывает один кирпич. 
+        */
+        __kernel void testKernel(read_only image2d_t texture, write_only image2d_t output, sampler_t smp
+            , ScreenSize screenSize, Matrix4x4 matProjViewInv, DebugOutput debugOutput)
+        {
+            const int idx = get_global_id(0);
+            const int idy = get_global_id(1);
+            
+            if (idx < screenSize[0] && idy < screenSize[1])
+            {
+                float3 rayDir, rayOrigin;
+                if(!getPixelRay(matProjViewInv, screenSize[0], screenSize[1], idx, idy, &rayDir, &rayOrigin))
+                {
+                    return;
+                }
+                
+                float3 minBox = (float3)(0, 0, 5);
+                float3 maxBox = (float3)(5, 5, 10);
+                float t0, t1;
+                
+                float4 bgcolor = (float4)(0.0f, 0.0f, 0.0f, 1.0f);
+                float4 color = bgcolor;
+                
+                if(boxIntersect(rayDir, rayOrigin, minBox, maxBox, &t0, &t1) && t1 > 0)
+                {
+                    if(t0 < 0)
+                    {
+                        t0 = 0;
+                    }
+    
+                    color.x = 1.0f;
+                    color.y = 1.0f;
+                    color.z = 0.0f;
+                    color.w = 1.0f;
+                }
+                
+                debugOutput[0] = 0.0f;
+                debugOutput[1] = 0.0f;
+                debugOutput[2] = 0.0f;
+                debugOutput[3] = 0.0f;
+                write_imagef(output, (int2)(idx, idy), color);
+            }
+        }
+    });
     }
 }
 
-/// Исходники кернела
-private alias testKernel = Kernel!(DebugOutputKernels, MatrixKernels, CommonKernels, "testKernel", q{
-
-    /**
-    *   Отрисовывает один кирпич. 
-    */
-    __kernel void testKernel(read_only image2d_t texture, write_only image2d_t output, sampler_t smp
-        , ScreenSize screenSize, Matrix4x4 matProjViewInv, DebugOutput debugOutput)
-    {
-        const int idx = get_global_id(0);
-        const int idy = get_global_id(1);
-        
-        if (idx < screenSize[0] && idy < screenSize[1])
-        {
-            float3 rayDir, rayOrigin;
-            if(!getPixelRay(matProjViewInv, screenSize[0], screenSize[1], idx, idy, &rayDir, &rayOrigin))
-            {
-                return;
-            }
-            
-            float3 minBox = (float3)(0, 0, 5);
-            float3 maxBox = (float3)(5, 5, 10);
-            float t0, t1;
-            
-            float4 bgcolor = (float4)(0.0f, 0.0f, 0.0f, 1.0f);
-            float4 color = bgcolor;
-            
-            if(boxIntersect(rayDir, rayOrigin, minBox, maxBox, &t0, &t1) && t1 > 0)
-            {
-                if(t0 < 0)
-                {
-                    t0 = 0;
-                }
-
-                color.x = 1.0f;
-                color.y = 1.0f;
-                color.z = 0.0f;
-                color.w = 1.0f;
-            }
-            
-            // Lets play wit blur!
-//            #define blurConst 0.2f
-//            float4 prevColor = read_imagef(texture, smp, (int2)(idx, idy));
-//            color.x = blurConst*color.x + (1.0f-blurConst)*prevColor.x;
-//            color.y = blurConst*color.y + (1.0f-blurConst)*prevColor.y;
-//            color.z = blurConst*color.z + (1.0f-blurConst)*prevColor.z;
-            
-            debugOutput[0] = 0.0f;
-            debugOutput[1] = 0.0f;
-            debugOutput[2] = 0.0f;
-            debugOutput[3] = 0.0f;
-            write_imagef(output, (int2)(idx, idy), color);
-        }
-    }
-});

@@ -61,14 +61,17 @@ struct GPUDebugOutput(size_t size = 4, ElementType = float)
     }
     
     private CLBuffer _buffer;
+    
+    /**
+    *   Kernel definitions for debug output buffer. 
+    */
+    public alias Kernels = Kernel!("DebugOutput", ConstantTuple!(
+            "ElementType", ElementType,
+            "size", size
+        ), q{
+        /// Debug output is write only array
+        #define DebugOutput __global write_only ElementType*
+        /// We statically know debug output length
+        #define DebugOutputLength size
+    });
 }
-
-/**
-*   Kernel definitions for debug output buffer. 
-*/
-alias DebugOutputKernels = Kernel!("DebugOutput", q{
-    /// Debug output is write only array
-    #define DebugOutput __global write_only float*
-    /// We statically know debug output length
-    #define DebugOutputLength 4
-});

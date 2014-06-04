@@ -47,7 +47,7 @@ template ConstantTuple(T...)
         else
         {
             enum checkTypes =  is(typeof(T[0]) == string) 
-                            && __traits(compiles, T[1].to!string)
+                            && __traits(compiles, T[1].to!string) || __traits(compiles, T[1].stringof)
                             && checkTypes!(T[2 .. $]);
         }
     }
@@ -70,7 +70,14 @@ template ConstantTuple(T...)
         static assert(isUnsigned!(typeof(TS[0])), "Expecting index of type unsigned integral");
         enum i = TS[0];
         
-        enum paramValue = T[i*2 + 1].to!string;
+        static if(__traits(compiles, T[i*2 + 1].to!string))
+        {
+            enum paramValue = T[i*2 + 1].to!string;
+        }
+        else static if(__traits(compiles, T[i*2 + 1].stringof))
+        {
+            enum paramValue = T[i*2 + 1].stringof;
+        }
     }
     
     /// Performs replacing of all parameters placeholders for corresponding values
@@ -261,8 +268,16 @@ template Kernel(TS...)
         }
         else
         {
-            enum MakeDepsSource = TS[0].kernelSource ~ "\n" 
-                ~ MakeDepsSource!(TS[1..$]);
+            static if(!TS[0].hasParams)
+            {
+                enum MakeDepsSource = TS[0].kernelSource ~ "\n" 
+                    ~ MakeDepsSource!(TS[1..$]);
+            }
+            else
+            {
+                enum MakeDepsSource = TS[0].params.insertValues(TS[0].kernelSource) ~ "\n" 
+                    ~ MakeDepsSource!(TS[1..$]);
+            }
         }
     }
     
